@@ -20,7 +20,7 @@ function RecommendedBadge() {
 }
 
 function isRecommended(ct: CapsuleType): boolean {
-  return !ct.gpuEligible && !ct.locked && ct.family === "standard";
+  return ct.family === "standard" && ct.locked === true;
 }
 
 function TypesTab() {
@@ -65,6 +65,7 @@ function TypesTab() {
                 <th className="p-3">Family</th>
                 <th className="p-3">CPU</th>
                 <th className="p-3">Memory</th>
+                <th className="p-3">Disk</th>
                 <th className="p-3">GPU</th>
                 <th className="p-3">Status</th>
               </tr>
@@ -79,6 +80,7 @@ function TypesTab() {
                   <td className="p-3 capitalize text-muted">{ct.family}</td>
                   <td className="p-3">{ct.cpuCount} vCPU</td>
                   <td className="p-3">{formatGB(ct.memoryBytes)}</td>
+                  <td className="p-3">{ct.diskBytes ? formatGB(ct.diskBytes) : "—"}</td>
                   <td className="p-3">
                     {ct.gpuEligible ? (
                       <span className="text-purple-400">{ct.gpuCount} GPU</span>

@@ -53,6 +53,7 @@ export interface CapsuleType {
   family: string;
   cpuCount: number;
   memoryBytes: number;
+  diskBytes?: number;
   pidLimit: number;
   gpuEligible: boolean;
   gpuCount: number;

@@ -90,6 +90,7 @@ export function CreateInstance() {
                 {types?.map((t) => (
                   <option key={t.id} value={t.name}>
                     {t.name} — {t.cpuCount} CPU, {formatBytes(t.memoryBytes)}
+                    {t.diskBytes ? `, ${formatBytes(t.diskBytes)} disk` : ""}
                   </option>
                 ))}
               </select>

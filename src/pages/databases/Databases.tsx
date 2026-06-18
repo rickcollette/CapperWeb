@@ -130,6 +130,9 @@ export function Databases() {
                   <td className="p-3">
                     <span className="font-medium">{db.name}</span>
                     <div className="text-xs text-muted">{db.id}</div>
+                    {db.instanceId && (
+                      <div className="text-xs text-muted">instance {db.instanceId}</div>
+                    )}
                   </td>
                   <td className="p-3">
                     <span className={ENGINE_COLORS[db.engine] ?? ""}>

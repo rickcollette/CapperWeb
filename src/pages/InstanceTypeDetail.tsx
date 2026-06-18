@@ -57,7 +57,9 @@ export function InstanceTypeDetail() {
   if (!instanceType)
     return <p className="text-red-400">Instance type &quot;{name}&quot; not found.</p>;
 
-  const storagePlaceholder = "—";
+  const storageLabel = instanceType.diskBytes
+    ? formatGB(instanceType.diskBytes)
+    : "—";
 
   return (
     <div>
@@ -103,8 +105,8 @@ export function InstanceTypeDetail() {
           <HardDrive className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
           <div>
             <p className="text-xs text-muted">Storage</p>
-            <p className="text-lg font-semibold">{storagePlaceholder}</p>
-            <p className="text-xs text-muted">GiB (inherited)</p>
+            <p className="text-lg font-semibold">{storageLabel}</p>
+            <p className="text-xs text-muted">GiB envelope</p>
           </div>
         </Card>
         <Card className="flex items-start gap-3">
