@@ -6,7 +6,7 @@ import { useImages } from "@/api/images";
 import { useCapsuleTypes, useCapInitTemplates, useNetworks, useVolumes } from "@/api/resources";
 import { Button, Card, PageHeader } from "@/components/common/ui";
 import { useLaunchWizard, WIZARD_STEPS } from "@/stores/launchWizard";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, imageDisplayName } from "@/lib/utils";
 
 export function CreateInstance() {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ export function CreateInstance() {
             >
               <option value="">Select image...</option>
               {images?.map((img) => (
-                <option key={img.id} value={img.name}>{img.name}</option>
+                <option key={img.id} value={img.name}>{imageDisplayName(img.name)}</option>
               ))}
             </select>
           </label>
@@ -211,7 +211,7 @@ export function CreateInstance() {
         {wizard.step === 5 && (
           <div className="space-y-4">
             <dl className="grid gap-2 text-sm">
-              <div><dt className="text-muted">Image</dt><dd className="font-mono">{wizard.image}</dd></div>
+              <div><dt className="text-muted">Image</dt><dd className="font-mono">{imageDisplayName(wizard.image)}</dd></div>
               <div><dt className="text-muted">Type</dt><dd>{wizard.instanceType || "default"}</dd></div>
               <div><dt className="text-muted">Network</dt><dd>{wizard.network || "none"}</dd></div>
               <div><dt className="text-muted">Volumes</dt><dd>{wizard.volumes.length || "none"}</dd></div>

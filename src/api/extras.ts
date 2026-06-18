@@ -183,7 +183,7 @@ export function useDatabases() {
 export function useCreateDatabase() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; engine: DBEngine }) =>
+    mutationFn: (body: { name: string; engine: DBEngine; version?: string }) =>
       apiFetch("/databases", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["databases"] }),
   });

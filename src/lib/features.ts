@@ -29,8 +29,10 @@ export const features = {
   topology: !isAIO,
   /** Compute Groups + Factory (fleet provisioning) — assume a fleet to scale. */
   computeGroups: !isAIO,
-  /** VPCs + VPC Mobility — cross-node network orchestration. */
-  vpcs: !isAIO,
+  /** VPCs — available single-node; only multi-zone mobility is cluster-only. */
+  vpcs: true,
+  /** VPC Mobility — cross-node/multi-zone migration; needs a fleet. */
+  vpcMobility: !isAIO,
   /** Marketplace. */
   marketplace: marketplaceEnabled,
   /** Organizations — multi-tenant control surface. */

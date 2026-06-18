@@ -4,6 +4,7 @@ import Editor from "@monaco-editor/react";
 import { useImage, useScanImage, useImageSBOM, usePublishImage, useDeleteImage } from "@/api/images";
 import { Button, Card, ConfirmDialog, PageHeader } from "@/components/common/ui";
 import type { MarketplaceListing } from "@/types/capper";
+import { imageDisplayName } from "@/lib/utils";
 
 const tabs = [
   { key: "manifest", label: "Manifest" },
@@ -43,7 +44,7 @@ export function ImageDetail() {
   return (
     <div>
       <PageHeader
-        title={image.name}
+        title={imageDisplayName(image.name)}
         description={`Digest ${image.digest}`}
         actions={
           <div className="flex gap-2">

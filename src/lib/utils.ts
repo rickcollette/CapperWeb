@@ -24,3 +24,9 @@ export function formatUptime(startedAt?: string): string {
   if (hrs < 24) return `${hrs}h ${mins % 60}m`;
   return `${Math.floor(hrs / 24)}d ${hrs % 24}h`;
 }
+
+// imageDisplayName strips the .cap extension for display. The real name (with
+// .cap) must still be used as the value for API calls and links.
+export function imageDisplayName(name?: string): string {
+  return (name ?? "").replace(/\.cap$/i, "");
+}

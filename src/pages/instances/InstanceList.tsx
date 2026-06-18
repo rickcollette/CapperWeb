@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Plus, Play, Square, RotateCcw, Trash2, Terminal } from "lucide-react";
 import { useInstances, useInstanceActions } from "@/api/instances";
 import { Button, ConfirmDialog, PageHeader, Pagination, StatusBadge, usePagination } from "@/components/common/ui";
-import { formatBytes, formatUptime } from "@/lib/utils";
+import { formatBytes, formatUptime, imageDisplayName } from "@/lib/utils";
 import type { CapperInstance } from "@/types/capper";
 
 export function InstanceList() {
@@ -116,7 +116,7 @@ function InstanceRow({
       </td>
       <td className="p-3 font-mono text-xs text-muted">{inst.id.slice(0, 12)}…</td>
       <td className="p-3"><StatusBadge status={inst.status} /></td>
-      <td className="p-3 font-mono text-xs">{inst.image}</td>
+      <td className="p-3 font-mono text-xs">{imageDisplayName(inst.image)}</td>
       <td className="p-3">{inst.capsuleType ?? "—"}</td>
       <td className="p-3">{inst.networkIp ?? "none"}</td>
       <td className="p-3">{inst.resources?.memoryBytes ? formatBytes(inst.resources.memoryBytes) : "—"}</td>

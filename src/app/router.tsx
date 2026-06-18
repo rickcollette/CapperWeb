@@ -153,6 +153,7 @@ export const router = createBrowserRouter([
       { path: "stacks",                    element: <Stacks /> },
       { path: "stacks/:name",              element: <StackDetail /> },
       { path: "databases",                 element: <Databases /> },
+      { path: "databases/:engine",         element: <Databases /> },
       { path: "ai",                        element: <AIControlPlane /> },
       { path: "backups",                   element: <Backups /> },
       { path: "instance-types",            element: <InstanceTypes /> },
@@ -204,8 +205,8 @@ export const router = createBrowserRouter([
       { path: "certificates/:id",          element: <CertificateDetail /> },
 
       // VPC Mobility
-      { path: "vpcs/:vpcId/mobility",      element: gated("vpcs", <VPCMobility />) },
-      { path: "vpcs/:vpcId/mobility/jobs/:jobId", element: gated("vpcs", <VPCJobDetail />) },
+      { path: "vpcs/:vpcId/mobility",      element: gated("vpcMobility", <VPCMobility />) },
+      { path: "vpcs/:vpcId/mobility/jobs/:jobId", element: gated("vpcMobility", <VPCJobDetail />) },
 
       { path: "*",                         element: <Navigate to="/" replace /> },
     ],

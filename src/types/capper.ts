@@ -301,13 +301,17 @@ export interface Stack {
 }
 
 // Databases
-export type DBEngine = "postgres" | "redis" | "mariadb";
+export type DBEngine = "postgres" | "redis" | "mariadb" | "capdb";
 
 export interface Database {
   id: string;
   name: string;
   engine: DBEngine;
+  version?: string;
   status: string;
+  port?: number;
+  instanceId?: string;
+  networkId?: string;
   createdAt: string;
 }
 

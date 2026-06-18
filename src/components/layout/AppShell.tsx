@@ -91,8 +91,18 @@ const navSectionsRaw: NavSection[] = [
     icon: HardDrive,
     items: [
       { to: "/storage",   label: "Storage",    icon: HardDrive },
-      { to: "/databases", label: "Databases",  icon: Database },
       { to: "/backups",   label: "Backups",    icon: Archive },
+    ],
+  },
+  {
+    label: "Databases",
+    icon: Database,
+    items: [
+      { to: "/databases",          label: "All Databases", icon: Database },
+      { to: "/databases/postgres", label: "PostgreSQL",    icon: Database },
+      { to: "/databases/mariadb",  label: "MariaDB",       icon: Database },
+      { to: "/databases/redis",    label: "Redis",         icon: Database },
+      { to: "/databases/capdb",    label: "CapDB",         icon: Database },
     ],
   },
   {

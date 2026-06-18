@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { Upload, Trash2 } from "lucide-react";
 import { useImages, useUploadImage, useDeleteImage } from "@/api/images";
 import { Button, ConfirmDialog, EmptyState, PageHeader } from "@/components/common/ui";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, imageDisplayName } from "@/lib/utils";
 
 export function ImageList() {
   const { data, isLoading } = useImages();
@@ -54,7 +54,7 @@ export function ImageList() {
                 <tr key={img.id} className="border-b border-border/60 hover:bg-slate-800/30">
                   <td className="p-3">
                     <Link to={`/images/${encodeURIComponent(img.name)}`} className="font-medium text-primary hover:underline">
-                      {img.name}
+                      {imageDisplayName(img.name)}
                     </Link>
                   </td>
                   <td className="p-3 font-mono text-xs">{img.digest.slice(0, 16)}…</td>
