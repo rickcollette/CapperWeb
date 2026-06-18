@@ -11,6 +11,7 @@ export interface RBACUser {
   status?: "active" | "pending" | "disabled";
   provider?: string;
   roles?: string[];
+  mustChangePassword?: boolean;
   createdAt?: string;
 }
 
@@ -33,6 +34,25 @@ export function useCurrentUser() {
     queryKey: ["current-user"],
     queryFn: () => apiFetch<CurrentUser>("/users/me"),
     retry: false,
+  });
+}
+
+// Self-service account management.
+export function useChangeOwnPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { currentPassword: string; newPassword: string }) =>
+      apiFetch("/users/me/password", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["current-user"] }),
+  });
+}
+
+export function useUpdateOwnProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { email: string }) =>
+      apiFetch("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["current-user"] }),
   });
 }
 

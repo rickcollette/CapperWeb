@@ -41,6 +41,7 @@ import { useDaemonStatus, useHealth, useInstances } from "@/api/instances";
 import { useCurrentUser } from "@/api/access";
 import { ApiError, apiFetch, isPendingError, setCsrfToken } from "@/api/client";
 import { Login } from "@/pages/Login";
+import { ChangePasswordForm } from "@/pages/Account";
 
 import { features, featureEnabled, type FeatureKey } from "@/lib/features";
 
@@ -318,6 +319,20 @@ export function AppShell() {
   if (meLoading) {
     return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted">Loading…</div>;
   }
+  // Admin-provisioned/reset local users must set a new password before access.
+  if (me?.user?.mustChangePassword) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="w-full max-w-sm">
+          <h1 className="mb-1 text-center text-lg font-semibold">Set a new password</h1>
+          <p className="mb-4 text-center text-xs text-muted">
+            Your account requires a new password before you can continue.
+          </p>
+          <ChangePasswordForm forced />
+        </div>
+      </div>
+    );
+  }
 
   return <AppShellInner me={me} />;
 }
@@ -362,7 +377,9 @@ function AppShellInner({ me }: { me: ReturnType<typeof useCurrentUser>["data"] }
             {failed > 0 && <span className="text-xs text-red-400">{failed} failed instance(s)</span>}
             <DaemonBadge online={daemon?.online} status={daemon?.status} />
             <span className="text-xs text-muted">API {health?.status === "ok" ? "healthy" : "unknown"}</span>
-            {me?.user?.email && <span className="text-xs text-muted">{me.user.email}</span>}
+            <NavLink to="/account" className="text-xs text-muted hover:text-primary">
+              {me?.user?.email || me?.user?.name || "Account"}
+            </NavLink>
             <SignOut provider={me?.user?.provider} />
           </div>
         </header>

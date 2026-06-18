@@ -21,6 +21,7 @@ function named<T extends Record<string, unknown>>(
 // ── Page imports (each becomes its own async chunk) ────────────────────────
 
 const Dashboard        = lazy(named(() => import("@/pages/Dashboard"), "Dashboard"));
+const Account          = lazy(named(() => import("@/pages/Account"), "Account"));
 const InstanceList     = lazy(named(() => import("@/pages/instances/InstanceList"), "InstanceList"));
 const InstanceDetail   = lazy(named(() => import("@/pages/instances/InstanceDetail"), "InstanceDetail"));
 const CreateInstance   = lazy(named(() => import("@/pages/instances/CreateInstance"), "CreateInstance"));
@@ -135,6 +136,7 @@ export const router = createBrowserRouter([
       { path: "dns",                       element: <DNSZones /> },
       { path: "dns/:zone",                 element: <ZoneDetail /> },
       { path: "capinit",                   element: <CapInitDashboard /> },
+      { path: "account",                   element: <Account /> },
       { path: "iam/access",                element: <AccessRequests /> },
       { path: "iam/users",                 element: <Users /> },
       { path: "iam/groups",                element: <Groups /> },
