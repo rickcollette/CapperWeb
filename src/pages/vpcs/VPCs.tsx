@@ -4,7 +4,8 @@ import { Button, Card, ConfirmDialog, EmptyState, PageHeader, StatusBadge } from
 import { ChevronDown, ChevronRight, Network, Plus, Trash2 } from "lucide-react";
 
 function SubnetPanel({ vpcSlug }: { vpcSlug: string }) {
-  const { data: subnets = [] } = useVPCSubnets(vpcSlug);
+  const { data: subnetsData } = useVPCSubnets(vpcSlug);
+  const subnets = subnetsData ?? []; // API returns null (not []) when empty
   const create = useCreateVPCSubnet(vpcSlug);
   const [form, setForm] = useState({ name: "", cidr: "", zone: "" });
 
@@ -97,7 +98,8 @@ function VPCRow({ vpc }: { vpc: any }) {
 }
 
 export function VPCs() {
-  const { data: vpcs = [], isLoading } = useVPCs();
+  const { data: vpcsData, isLoading } = useVPCs();
+  const vpcs = vpcsData ?? []; // API returns null (not []) when empty
   const create = useCreateVPC();
   const [form, setForm] = useState({ name: "", cidr: "" });
   const [showCreate, setShowCreate] = useState(false);
