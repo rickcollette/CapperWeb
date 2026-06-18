@@ -962,7 +962,7 @@ namespace names
 
 # DNS UI
 
-Capper has DNS command support for zones, records, service discovery, queries, and an embedded DNS daemon. The WebUI should expose that as internal Route53-like functionality. 
+Capper has DNS command support for zones, records, service discovery, queries, and an embedded DNS daemon. The WebUI should expose that as internal DNS management for Capper networks. 
 
 Screens:
 

@@ -10,7 +10,7 @@ export function DNSZones() {
 
   return (
     <div>
-      <PageHeader title="DNS Zones" description="Internal Route53-like DNS for Capper networks." />
+      <PageHeader title="DNS Zones" description="Internal DNS for Capper networks." />
       <Card className="mb-6 max-w-md">
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); create.mutate({ name }, { onSuccess: () => setName("") }); }}>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="zone.name." className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" required />
