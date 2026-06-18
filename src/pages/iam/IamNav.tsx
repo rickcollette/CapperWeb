@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 const links = [
+  { to: "/iam/access", key: "access", label: "Users & Access" },
   { to: "/iam/users", key: "users", label: "Users" },
   { to: "/iam/groups", key: "groups", label: "Groups" },
   { to: "/iam/roles", key: "roles", label: "Roles" },

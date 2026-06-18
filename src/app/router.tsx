@@ -34,6 +34,7 @@ const DNSZones         = lazy(named(() => import("@/pages/dns/DNSZones"), "DNSZo
 const ZoneDetail       = lazy(named(() => import("@/pages/dns/DNSZones"), "ZoneDetail"));
 const CapInitDashboard = lazy(named(() => import("@/pages/capinit/CapInitDashboard"), "CapInitDashboard"));
 const CapsuleRegistry  = lazy(named(() => import("@/pages/capsules/CapsuleRegistry"), "CapsuleRegistry"));
+const AccessRequests   = lazy(named(() => import("@/pages/iam/AccessRequests"), "AccessRequests"));
 const Users            = lazy(named(() => import("@/pages/iam/Users"), "Users"));
 const Groups           = lazy(named(() => import("@/pages/iam/Groups"), "Groups"));
 const Roles            = lazy(named(() => import("@/pages/iam/Roles"), "Roles"));
@@ -134,6 +135,7 @@ export const router = createBrowserRouter([
       { path: "dns",                       element: <DNSZones /> },
       { path: "dns/:zone",                 element: <ZoneDetail /> },
       { path: "capinit",                   element: <CapInitDashboard /> },
+      { path: "iam/access",                element: <AccessRequests /> },
       { path: "iam/users",                 element: <Users /> },
       { path: "iam/groups",                element: <Groups /> },
       { path: "iam/roles",                 element: <Roles /> },

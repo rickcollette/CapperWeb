@@ -38,6 +38,9 @@ import {
 import { cn } from "@/lib/utils";
 import { DaemonBadge } from "@/components/common/ui";
 import { useDaemonStatus, useHealth, useInstances } from "@/api/instances";
+import { useCurrentUser } from "@/api/access";
+import { ApiError, apiFetch, isPendingError, setCsrfToken } from "@/api/client";
+import { Login } from "@/pages/Login";
 
 import { features, featureEnabled, type FeatureKey } from "@/lib/features";
 
@@ -258,7 +261,68 @@ function RouteErrorBoundary() {
   );
 }
 
+// SignOut clears the capper session, and for Google sessions also clears the
+// oauth2-proxy session, then returns to the login screen.
+function SignOut({ provider }: { provider?: string }) {
+  async function onClick() {
+    try {
+      await apiFetch("/auth/session", { method: "DELETE" });
+    } catch {
+      /* ignore — clear client state regardless */
+    }
+    setCsrfToken(null);
+    if (provider === "google") {
+      window.location.href = "/oauth2/sign_out?rd=%2F";
+    } else {
+      window.location.assign("/");
+    }
+  }
+  return (
+    <button onClick={onClick} className="text-xs text-muted hover:text-primary" title="Sign out">
+      Sign out
+    </button>
+  );
+}
+
+function AwaitingApproval() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6">
+      <div className="max-w-md rounded-xl border border-border bg-card p-8 text-center">
+        <h1 className="mb-2 text-lg font-semibold">Awaiting approval</h1>
+        <p className="text-sm text-muted">
+          Your account has been created and is pending approval by an administrator.
+          You’ll have access once an admin approves your request.
+        </p>
+        <div className="mt-4">
+          <a href="/oauth2/sign_out?rd=%2F" className="text-sm text-primary hover:underline">
+            Sign out
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function AppShell() {
+  const { data: me, error: meError, isLoading: meLoading } = useCurrentUser();
+
+  // No session → show the public login screen (Google + username/password).
+  const unauthorized = meError instanceof ApiError && meError.status === 401;
+  if (unauthorized) {
+    return <Login />;
+  }
+  // A signed-in SSO user awaiting approval (or disabled) is gated out.
+  if (isPendingError(meError)) {
+    return <AwaitingApproval />;
+  }
+  if (meLoading) {
+    return <div className="flex min-h-screen items-center justify-center bg-background text-sm text-muted">Loading…</div>;
+  }
+
+  return <AppShellInner me={me} />;
+}
+
+function AppShellInner({ me }: { me: ReturnType<typeof useCurrentUser>["data"] }) {
   const { data: health } = useHealth();
   const { data: daemon } = useDaemonStatus();
   const { data: instances } = useInstances();
@@ -298,6 +362,8 @@ export function AppShell() {
             {failed > 0 && <span className="text-xs text-red-400">{failed} failed instance(s)</span>}
             <DaemonBadge online={daemon?.online} status={daemon?.status} />
             <span className="text-xs text-muted">API {health?.status === "ok" ? "healthy" : "unknown"}</span>
+            {me?.user?.email && <span className="text-xs text-muted">{me.user.email}</span>}
+            <SignOut provider={me?.user?.provider} />
           </div>
         </header>
         <main className="flex-1 overflow-auto p-6">
