@@ -175,7 +175,7 @@ export function CreateLoadBalancer() {
               onChange={(e) => setForm({ ...form, vpcId: e.target.value, subnetId: "" })}
             >
               {(vpcs ?? []).map((v) => (
-                <option key={v.id ?? v.slug} value={v.slug ?? v.id}>
+                <option key={v.id ?? v.slug} value={v.id}>
                   {v.name ?? v.slug}
                 </option>
               ))}

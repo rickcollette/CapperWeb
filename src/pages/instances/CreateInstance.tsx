@@ -183,7 +183,7 @@ export function CreateInstance() {
               >
                 <option value="">Select VPC...</option>
                 {vpcs?.map((v: { id: string; name: string; slug?: string }) => (
-                  <option key={v.id} value={v.slug || v.id}>{v.name} ({v.id})</option>
+                  <option key={v.id} value={v.id}>{v.name} ({v.slug || v.id})</option>
                 ))}
               </select>
             </label>
