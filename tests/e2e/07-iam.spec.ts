@@ -12,17 +12,18 @@ test.describe("IAM Users", () => {
   });
 
   test("renders page heading", async ({ page }) => {
-    await expectHeading(page, "Users");
+    await expectHeading(page, "Users & Access");
   });
 
   test("create user form has name input and button", async ({ page }) => {
-    await expect(page.getByPlaceholder(/username|name/i).first()).toBeVisible({ timeout: 8000 });
-    await expect(page.getByRole("button", { name: /create/i }).first()).toBeVisible();
+    await expect(page.getByPlaceholder(/username|google email/i).first()).toBeVisible({ timeout: 8000 });
+    await expect(page.getByRole("button", { name: /add/i }).first()).toBeVisible();
   });
 
-  test("create a user and verify it appears", async ({ page }) => {
-    await page.getByPlaceholder(/username|name/i).first().fill(USER_NAME);
-    await page.getByRole("button", { name: /create/i }).first().click();
+  test("create a sign-in user and verify it appears", async ({ page }) => {
+    await page.getByPlaceholder(/username/i).first().fill(USER_NAME);
+    await page.getByPlaceholder(/password/i).first().fill("test-pass-123");
+    await page.getByRole("button", { name: /add/i }).first().click();
     await expect(page.getByText(USER_NAME, { exact: false })).toBeVisible({ timeout: 10000 });
   });
 
@@ -39,7 +40,8 @@ test.describe("IAM Groups", () => {
   });
 
   test("renders page heading", async ({ page }) => {
-    await expectHeading(page, "Groups");
+    await expectHeading(page, "Users & Access");
+    await expect(page.getByRole("link", { name: "Groups" })).toBeVisible();
   });
 
   test("create group form has name input and button", async ({ page }) => {
@@ -60,7 +62,8 @@ test.describe("IAM Roles", () => {
   });
 
   test("renders page heading", async ({ page }) => {
-    await expectHeading(page, "Roles");
+    await expectHeading(page, "Users & Access");
+    await expect(page.getByRole("link", { name: "Roles" })).toBeVisible();
   });
 
   test("create role form has name input and button", async ({ page }) => {
@@ -81,7 +84,8 @@ test.describe("IAM Policies", () => {
   });
 
   test("renders page heading", async ({ page }) => {
-    await expectHeading(page, "Policies");
+    await expectHeading(page, "Users & Access");
+    await expect(page.getByRole("link", { name: "Policies" })).toBeVisible();
   });
 
   test("policy JSON editor is present", async ({ page }) => {
@@ -122,7 +126,8 @@ test.describe("IAM Tokens", () => {
   });
 
   test("renders token management heading", async ({ page }) => {
-    await expectHeading(page, "Tokens");
+    await expectHeading(page, "Users & Access");
+    await expect(page.getByRole("link", { name: "API Keys" })).toBeVisible();
   });
 
   test("create token form has name and TTL inputs", async ({ page }) => {

@@ -15,7 +15,7 @@ const GET_ENDPOINTS = [
   "/api/v1/instances",
   "/api/v1/images",
   "/api/v1/capsule-types",
-  "/api/v1/networks",
+  "/api/v1/vpcs",
   "/api/v1/storage/buckets",
   "/api/v1/storage/volumes",
   "/api/v1/dns/zones",

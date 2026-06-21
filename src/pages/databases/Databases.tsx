@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useDatabases, useCreateDatabase, useDeleteDatabase } from "@/api/extras";
+import { DeleteResourceModal } from "@/components/DeleteResourceModal";
+import { DeletionProgressModal } from "@/components/DeletionProgressModal";
+import { useDeletionFlow } from "@/hooks/useDeletionFlow";
 import type { DBEngine } from "@/types/capper";
 import {
   Button,
   Card,
-  ConfirmDialog,
   EmptyState,
   PageHeader,
   StatusBadge,
@@ -40,7 +42,7 @@ export function Databases() {
   const engineParam = (params.engine as DBEngine | undefined);
   const scoped = engineParam && ALL_ENGINES.includes(engineParam) ? engineParam : undefined;
 
-  const { data, isLoading } = useDatabases();
+  const { data, isLoading, refetch } = useDatabases();
   const create = useCreateDatabase();
   const del = useDeleteDatabase();
   const [form, setForm] = useState<{ name: string; engine: DBEngine; version: string }>({
@@ -48,7 +50,9 @@ export function Databases() {
     engine: scoped ?? "postgres",
     version: ENGINE_DEFAULT_VERSION[scoped ?? "postgres"],
   });
-  const [confirmName, setConfirmName] = useState<string | null>(null);
+  const deletion = useDeletionFlow({
+    onDeletionComplete: () => refetch(),
+  });
 
   // When scoped to an engine, keep the create form locked to it.
   const formEngine = scoped ?? form.engine;
@@ -144,7 +148,13 @@ export function Databases() {
                   <td className="p-3 text-xs">{db.port || "—"}</td>
                   <td className="p-3 text-xs text-muted">{new Date(db.createdAt).toLocaleString()}</td>
                   <td className="p-3 text-right">
-                    <Button variant="danger" size="sm" disabled={del.isPending} onClick={() => setConfirmName(db.name)}>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      disabled={del.isPending}
+                      onClick={() => deletion.startDeletion('database', db.id, db.name)}
+                      data-testid="database-delete"
+                    >
                       Delete
                     </Button>
                   </td>
@@ -155,7 +165,37 @@ export function Databases() {
         </div>
       )}
 
-      <ConfirmDialog
+      {/* New deletion flow modals */}
+      <DeleteResourceModal
+        open={deletion.showConfirmModal}
+        resourceType={deletion.state.resourceType}
+        resourceId={deletion.state.resourceId}
+        resourceName={deletion.state.resourceName}
+        onClose={deletion.closeConfirmModal}
+        onSuccess={(jobId) => {
+          deletion.closeConfirmModal();
+          deletion.onConfirmSuccess(jobId);
+        }}
+      />
+
+      {deletion.state.jobId && (
+        <DeletionProgressModal
+          open={deletion.showProgressModal}
+          jobId={deletion.state.jobId}
+          resourceType={deletion.state.resourceType}
+          resourceId={deletion.state.resourceId}
+          onClose={deletion.closeModal}
+          onComplete={(job) => {
+            deletion.onDeletionComplete(job);
+            if (job.status === 'completed') {
+              setTimeout(() => deletion.closeModal(), 2000);
+            }
+          }}
+        />
+      )}
+
+      {/* Old deletion confirm - kept for backup if needed */}
+      {/* <ConfirmDialog
         open={!!confirmName}
         title={`Delete database "${confirmName}"?`}
         description="All data will be permanently deleted. This action cannot be undone."
@@ -166,7 +206,7 @@ export function Databases() {
           setConfirmName(null);
         }}
         onCancel={() => setConfirmName(null)}
-      />
+      /> */}
     </div>
   );
 }

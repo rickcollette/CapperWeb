@@ -1,25 +1,43 @@
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InstanceState } from "@/types/capper";
 
+const transitionalStyle = "bg-amber-500/15 text-amber-400 border-amber-500/30";
+
 const statusStyles: Record<string, string> = {
   running: "bg-green-500/15 text-green-400 border-green-500/30",
+  ready: "bg-green-500/15 text-green-400 border-green-500/30",
+  active: "bg-green-500/15 text-green-400 border-green-500/30",
   stopped: "bg-slate-500/15 text-slate-400 border-slate-500/30",
   failed: "bg-red-500/15 text-red-400 border-red-500/30",
+  error: "bg-red-500/15 text-red-400 border-red-500/30",
   created: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
-  starting: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  stopping: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  starting: transitionalStyle,
+  stopping: transitionalStyle,
   unknown: "bg-slate-500/15 text-slate-400 border-slate-500/30",
 };
 
+// transitionalStatuses are in-progress states: while a resource is in one of
+// these, the badge shows a spinner so it's clear work is still happening
+// server-side (start/stop/delete/create are not instantaneous).
+const transitionalStatuses = new Set([
+  "starting", "stopping", "restarting", "creating", "deleting", "terminating",
+  "pending", "provisioning", "deploying", "draining", "updating", "attaching",
+  "detaching", "configuring", "initializing",
+]);
+
 export function StatusBadge({ status }: { status: string }) {
+  const key = (status ?? "").toLowerCase();
+  const transitional = transitionalStatuses.has(key);
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium capitalize",
-        statusStyles[status] ?? statusStyles.unknown,
+        "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium capitalize",
+        statusStyles[key] ?? (transitional ? transitionalStyle : statusStyles.unknown),
       )}
     >
+      {transitional && <Loader2 className="h-3 w-3 animate-spin" />}
       {status}
     </span>
   );
@@ -125,6 +143,7 @@ export function ConfirmDialog({
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
   variant = "danger",
+  pending = false,
   onConfirm,
   onCancel,
 }: {
@@ -134,6 +153,8 @@ export function ConfirmDialog({
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: "danger" | "primary";
+  /** When true the confirm action is in flight: show a spinner and lock the dialog. */
+  pending?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -144,8 +165,11 @@ export function ConfirmDialog({
         <h3 className="text-lg font-semibold">{title}</h3>
         {description && <p className="mt-2 text-sm text-muted">{description}</p>}
         <div className="mt-6 flex justify-end gap-2">
-          <Button onClick={onCancel}>{cancelLabel}</Button>
-          <Button variant={variant} onClick={onConfirm}>{confirmLabel}</Button>
+          <Button onClick={onCancel} disabled={pending}>{cancelLabel}</Button>
+          <Button variant={variant} onClick={onConfirm} disabled={pending}>
+            {pending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {pending ? "Working…" : confirmLabel}
+          </Button>
         </div>
       </div>
     </div>

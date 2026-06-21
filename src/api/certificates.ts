@@ -286,8 +286,9 @@ export function useAttachCertToLB() {
         method: "POST",
         body: JSON.stringify({ certId, hostname }),
       }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["certificates"] });
+      qc.invalidateQueries({ queryKey: ["lb", vars.lbId] });
     },
   });
 }
@@ -311,8 +312,9 @@ export function useDetachCertFromLB() {
         method: "DELETE",
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["certificates"] });
+      qc.invalidateQueries({ queryKey: ["lb", vars.lbId] });
     },
   });
 }

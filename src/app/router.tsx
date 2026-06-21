@@ -27,15 +27,12 @@ const InstanceDetail   = lazy(named(() => import("@/pages/instances/InstanceDeta
 const CreateInstance   = lazy(named(() => import("@/pages/instances/CreateInstance"), "CreateInstance"));
 const ImageList        = lazy(named(() => import("@/pages/images/ImageList"), "ImageList"));
 const ImageDetail      = lazy(named(() => import("@/pages/images/ImageDetail"), "ImageDetail"));
-const NetworkList      = lazy(named(() => import("@/pages/networks/NetworkList"), "NetworkList"));
-const NetworkDetail    = lazy(named(() => import("@/pages/networks/NetworkList"), "NetworkDetail"));
 const StorageDashboard = lazy(named(() => import("@/pages/storage/StorageDashboard"), "StorageDashboard"));
 const BucketDetail     = lazy(named(() => import("@/pages/storage/BucketDetail"), "BucketDetail"));
 const DNSZones         = lazy(named(() => import("@/pages/dns/DNSZones"), "DNSZones"));
 const ZoneDetail       = lazy(named(() => import("@/pages/dns/DNSZones"), "ZoneDetail"));
 const CapInitDashboard = lazy(named(() => import("@/pages/capinit/CapInitDashboard"), "CapInitDashboard"));
 const CapsuleRegistry  = lazy(named(() => import("@/pages/capsules/CapsuleRegistry"), "CapsuleRegistry"));
-const AccessRequests   = lazy(named(() => import("@/pages/iam/AccessRequests"), "AccessRequests"));
 const Users            = lazy(named(() => import("@/pages/iam/Users"), "Users"));
 const Groups           = lazy(named(() => import("@/pages/iam/Groups"), "Groups"));
 const Roles            = lazy(named(() => import("@/pages/iam/Roles"), "Roles"));
@@ -47,7 +44,8 @@ const Settings         = lazy(named(() => import("@/pages/settings/Settings"), "
 const Marketplace      = lazy(named(() => import("@/pages/marketplace/Marketplace"), "Marketplace"));
 const FactoryDashboard = lazy(named(() => import("@/pages/factory/FactoryDashboard"), "FactoryDashboard"));
 const LoadBalancers    = lazy(named(() => import("@/pages/lb/LoadBalancers"), "LoadBalancers"));
-const LBDetail         = lazy(named(() => import("@/pages/lb/LoadBalancers"), "LBDetail"));
+const CreateLoadBalancer = lazy(named(() => import("@/pages/lb/CreateLoadBalancer"), "CreateLoadBalancer"));
+const LBDetail         = lazy(named(() => import("@/pages/lb/LBDetail"), "LBDetail"));
 const Firewalls        = lazy(named(() => import("@/pages/firewalls/Firewalls"), "Firewalls"));
 const HealthChecks     = lazy(named(() => import("@/pages/health/HealthChecks"), "HealthChecks"));
 const Stacks           = lazy(named(() => import("@/pages/stacks/Stacks"), "Stacks"));
@@ -67,6 +65,9 @@ const Ingress          = lazy(named(() => import("@/pages/ingress/Ingress"), "In
 const Queues           = lazy(named(() => import("@/pages/queues/Queues"), "Queues"));
 const Search           = lazy(named(() => import("@/pages/search/Search"), "Search"));
 const VPCs             = lazy(named(() => import("@/pages/vpcs/VPCs"), "VPCs"));
+const CreateVPC        = lazy(named(() => import("@/pages/vpcs/CreateVPC"), "CreateVPC"));
+const VPCDetail        = lazy(named(() => import("@/pages/vpcs/VPCDetail"), "VPCDetail"));
+const NetworkingDashboard = lazy(named(() => import("@/pages/vpcs/NetworkingDashboard"), "NetworkingDashboard"));
 const KMS              = lazy(named(() => import("@/pages/kms/KMS"), "KMS"));
 const Topology         = lazy(named(() => import("@/pages/topology/Topology"), "Topology"));
 const ComputeGroups    = lazy(named(() => import("@/pages/groups/ComputeGroups"), "ComputeGroups"));
@@ -94,6 +95,7 @@ const RenewalQueue     = lazy(named(() => import("@/pages/certificates/RenewalQu
 
 // VPC Mobility
 const VPCMobility      = lazy(named(() => import("@/pages/vpcs/VPCMobility"), "VPCMobility"));
+const CreateMobilityPlan = lazy(named(() => import("@/pages/vpcs/CreateMobilityPlan"), "CreateMobilityPlan"));
 const VPCJobDetail     = lazy(named(() => import("@/pages/vpcs/VPCJobDetail"), "VPCJobDetail"));
 
 // Resource Monitor (capper-observe)
@@ -106,6 +108,12 @@ const MCPServers       = lazy(named(() => import("@/pages/serverless/MCPServers"
 
 // Public IPAM
 const RoutableIPs      = lazy(named(() => import("@/pages/ipam/RoutableIPs"), "RoutableIPs"));
+const IpExclusions     = lazy(named(() => import("@/pages/admin/IpExclusions"), "IpExclusions"));
+const LocalUsers       = lazy(named(() => import("@/pages/admin/LocalUsers"), "LocalUsers"));
+const Limits           = lazy(named(() => import("@/pages/admin/Limits"), "Limits"));
+const HostStorage      = lazy(named(() => import("@/pages/admin/HostStorage"), "HostStorage"));
+const Fail2ban         = lazy(named(() => import("@/pages/admin/Fail2ban"), "Fail2ban"));
+const Firewall         = lazy(named(() => import("@/pages/admin/Firewall"), "Firewall"));
 
 // Secrets + Governance
 const Secrets          = lazy(named(() => import("@/pages/secrets/Secrets"), "Secrets"));
@@ -129,15 +137,13 @@ export const router = createBrowserRouter([
       { path: "marketplace",               element: MARKETPLACE_ENABLED ? <Marketplace /> : <Navigate to="/" replace /> },
       { path: "marketplace/review/:id",    element: MARKETPLACE_ENABLED ? <MarketplaceReview /> : <Navigate to="/" replace /> },
       { path: "factory",                   element: gated("computeGroups", <FactoryDashboard />) },
-      { path: "networks",                  element: <NetworkList /> },
-      { path: "networks/:name",            element: <NetworkDetail /> },
       { path: "storage",                   element: <StorageDashboard /> },
       { path: "storage/buckets/:bucket",   element: <BucketDetail /> },
       { path: "dns",                       element: <DNSZones /> },
       { path: "dns/:zone",                 element: <ZoneDetail /> },
       { path: "capinit",                   element: <CapInitDashboard /> },
       { path: "account",                   element: <Account /> },
-      { path: "iam/access",                element: <AccessRequests /> },
+      { path: "iam/access",                element: <Navigate to="/iam/users" replace /> },
       { path: "iam/users",                 element: <Users /> },
       { path: "iam/groups",                element: <Groups /> },
       { path: "iam/roles",                 element: <Roles /> },
@@ -146,7 +152,14 @@ export const router = createBrowserRouter([
       { path: "iam/tokens",                element: <Tokens /> },
       { path: "audit",                     element: <AuditLog /> },
       { path: "settings",                  element: <Settings /> },
+      { path: "admin/ip-exclusions",       element: <IpExclusions /> },
+      { path: "admin/local-users",         element: <LocalUsers /> },
+      { path: "admin/limits",              element: <Limits /> },
+      { path: "admin/storage",             element: <HostStorage /> },
+      { path: "admin/fail2ban",            element: <Fail2ban /> },
+      { path: "admin/firewall",            element: <Firewall /> },
       { path: "lb",                        element: <LoadBalancers /> },
+      { path: "lb/new",                    element: <CreateLoadBalancer /> },
       { path: "lb/:name",                  element: <LBDetail /> },
       { path: "firewalls",                 element: <Firewalls /> },
       { path: "health",                    element: <HealthChecks /> },
@@ -166,6 +179,9 @@ export const router = createBrowserRouter([
       { path: "queues",                    element: <Queues /> },
       { path: "search",                    element: <Search /> },
       { path: "vpcs",                      element: gated("vpcs", <VPCs />) },
+      { path: "vpcs/new",                  element: gated("vpcs", <CreateVPC />) },
+      { path: "vpcs/:vpcId",               element: gated("vpcs", <VPCDetail />) },
+      { path: "networking",                element: gated("vpcs", <NetworkingDashboard />) },
       { path: "kms",                       element: <KMS /> },
       { path: "topology",                  element: gated("topology", <Topology />) },
       { path: "groups",                    element: gated("computeGroups", <ComputeGroups />) },
@@ -206,6 +222,7 @@ export const router = createBrowserRouter([
 
       // VPC Mobility
       { path: "vpcs/:vpcId/mobility",      element: gated("vpcMobility", <VPCMobility />) },
+      { path: "vpcs/:vpcId/mobility/plans/new", element: gated("vpcMobility", <CreateMobilityPlan />) },
       { path: "vpcs/:vpcId/mobility/jobs/:jobId", element: gated("vpcMobility", <VPCJobDetail />) },
 
       { path: "*",                         element: <Navigate to="/" replace /> },

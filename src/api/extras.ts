@@ -3,6 +3,8 @@ import { apiFetch } from "@/api/client";
 import type {
   LoadBalancer,
   LBDetail,
+  LBListener,
+  LBTargetGroup,
   Firewall,
   HealthCheckResult,
   Stack,
@@ -34,25 +36,162 @@ export function useLB(name: string) {
   });
 }
 
+export function useSubnetAvailableIPs(subnetId: string) {
+  return useQuery({
+    queryKey: ["subnet-available-ips", subnetId],
+    queryFn: () => apiFetch<string[]>(`/subnets/${subnetId}/available-ips`),
+    enabled: !!subnetId,
+  });
+}
+
+export interface CreateLBBody {
+  name: string;
+  scheme?: "internal" | "internet-facing";
+  type?: "application" | "network";
+  vpcId?: string;
+  subnetId: string;
+  poolId?: string;
+  vip?: string;
+  autoVip?: boolean;
+  algorithm?: string;
+  listenerProtocol?: string;
+  listenerPort?: number;
+  listenerCertId?: string;
+  targetGroupName?: string;
+  targetGroupPort?: number;
+  initialTargetAddr?: string;
+  // legacy
+  mode?: "tcp" | "http" | "https";
+  listenAddr?: string;
+  selector?: string;
+  tlsCertId?: string;
+}
+
 export function useCreateLB() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
-      name: string;
-      mode: "tcp" | "http";
-      listenAddr: string;
-      network: string;
-      algorithm: string;
-      selector: string;
-    }) => apiFetch("/lb", { method: "POST", body: JSON.stringify(body) }),
+    mutationFn: (body: CreateLBBody) =>
+      apiFetch<LBDetail | LoadBalancer>("/lb", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lb"] }),
   });
 }
 
+export function useDeleteLB() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (name: string) => apiFetch(`/lb/${name}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lb"] }),
+  });
+}
+
+export function useLBListeners(lbName: string) {
+  return useQuery({
+    queryKey: ["lb", lbName, "listeners"],
+    queryFn: () => apiFetch<LBListener[]>(`/lb/${lbName}/listeners`),
+    enabled: !!lbName,
+  });
+}
+
+export function useCreateLBListener(lbName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { targetGroupId: string; protocol: string; port: number; certificateId?: string }) =>
+      apiFetch(`/lb/${lbName}/listeners`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lb", lbName] });
+      qc.invalidateQueries({ queryKey: ["lb", lbName, "listeners"] });
+    },
+  });
+}
+
+export function useDeleteLBListener(lbName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/lb/${lbName}/listeners/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lb", lbName] });
+      qc.invalidateQueries({ queryKey: ["lb", lbName, "listeners"] });
+    },
+  });
+}
+
+export function useLBTargetGroups(lbName: string) {
+  return useQuery({
+    queryKey: ["lb", lbName, "target-groups"],
+    queryFn: () => apiFetch<LBTargetGroup[]>(`/lb/${lbName}/target-groups`),
+    enabled: !!lbName,
+  });
+}
+
+export function useCreateLBTargetGroup(lbName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { name: string; protocol: string; port: number; healthPath?: string }) =>
+      apiFetch(`/lb/${lbName}/target-groups`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lb", lbName] });
+      qc.invalidateQueries({ queryKey: ["lb", lbName, "target-groups"] });
+    },
+  });
+}
+
+export function useDeleteLBTargetGroup(lbName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (tgId: string) => apiFetch(`/lb/${lbName}/target-groups/${tgId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lb", lbName] });
+      qc.invalidateQueries({ queryKey: ["lb", lbName, "target-groups"] });
+    },
+  });
+}
+
+export function useAddLBTarget(lbName: string, tgId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { address: string }) =>
+      apiFetch(`/lb/${lbName}/target-groups/${tgId}/targets`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
+  });
+}
+
+export function useRemoveLBTarget(lbName: string, tgId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (targetId: string) =>
+      apiFetch(`/lb/${lbName}/target-groups/${tgId}/targets/${encodeURIComponent(targetId)}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
+  });
+}
+
+export function useAttachListenerCert(lbName: string, listenerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { certId: string; hostname?: string }) =>
+      apiFetch(`/lb/${lbName}/listeners/${listenerId}/certificates`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
+  });
+}
+
+export function useDetachListenerCert(lbName: string, listenerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (certId: string) =>
+      apiFetch(`/lb/${lbName}/listeners/${listenerId}/certificates?certId=${encodeURIComponent(certId)}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
+  });
+}
+
+// Legacy backend helpers (migrated LBs may still expose backends)
 export function useAddLBBackend(lbName: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { address: string; port?: number; weight?: number }) =>
+    mutationFn: (body: { address: string }) =>
       apiFetch(`/lb/${lbName}/backends`, { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
   });
@@ -61,17 +200,8 @@ export function useAddLBBackend(lbName: string) {
 export function useRemoveLBBackend(lbName: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (backendId: string) =>
-      apiFetch(`/lb/${lbName}/backends/${backendId}`, { method: "DELETE" }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
-  });
-}
-
-export function useUpdateLBBackend(lbName: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, weight }: { id: string; weight: number }) =>
-      apiFetch(`/lb/${lbName}/backends/${id}`, { method: "PATCH", body: JSON.stringify({ weight }) }),
+    mutationFn: (address: string) =>
+      apiFetch(`/lb/${lbName}/backends/${encodeURIComponent(address)}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lb", lbName] }),
   });
 }

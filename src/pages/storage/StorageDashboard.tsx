@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import { useBuckets, useVolumes, useAttachVolume, useDetachVolume, useCreateBucket, useCreateVolume } from "@/api/resources";
+import { useStorageSettings } from "@/api/admin";
 import { useInstances } from "@/api/instances";
 import { Button, Card, EmptyState, PageHeader } from "@/components/common/ui";
 import { formatBytes } from "@/lib/utils";
@@ -13,6 +14,8 @@ export function StorageDashboard() {
   const detach = useDetachVolume();
   const createBucket = useCreateBucket();
   const createVolume = useCreateVolume();
+  const { data: storageSettings } = useStorageSettings();
+  const poolReady = !!storageSettings?.defaultInstancePool;
   const [attachForm, setAttachForm] = useState({ volume: "", instanceId: "", mountPath: "/mnt/data" });
   const [showAttach, setShowAttach] = useState(false);
   const [bucketName, setBucketName] = useState("");
@@ -37,13 +40,19 @@ export function StorageDashboard() {
 
       <h2 className="mb-3 text-lg font-medium">Create volume</h2>
       <Card className="mb-8 max-w-md">
+        {!poolReady && (
+          <p className="mb-3 text-sm text-amber-400">
+            Configure a default storage pool under Admin → Storage before creating volumes.
+          </p>
+        )}
         <form className="flex gap-2" onSubmit={(e) => {
           e.preventDefault();
+          if (!poolReady) return;
           createVolume.mutate({ name: volName, sizeBytes: parseInt(volSize, 10) * 1024 * 1024 * 1024 }, { onSuccess: () => { setVolName(""); setVolSize("1"); } });
         }}>
-          <input value={volName} onChange={(e) => setVolName(e.target.value)} placeholder="Volume name" className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" required />
-          <input value={volSize} onChange={(e) => setVolSize(e.target.value)} placeholder="Size (GB)" className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm" />
-          <Button type="submit" variant="primary">Create Volume</Button>
+          <input value={volName} onChange={(e) => setVolName(e.target.value)} placeholder="Volume name" className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" required disabled={!poolReady} />
+          <input value={volSize} onChange={(e) => setVolSize(e.target.value)} placeholder="Size (GB)" className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm" disabled={!poolReady} />
+          <Button type="submit" variant="primary" disabled={!poolReady}>Create Volume</Button>
         </form>
       </Card>
 

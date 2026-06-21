@@ -1,8 +1,9 @@
 import { useState } from "react";
 import Editor from "@monaco-editor/react";
 import { useCreatePolicy, useIAMPolicies, useIAMSimulate, useIAMTokens, useIssueToken } from "@/api/resources";
-import { Button, Card, EmptyState, PageHeader } from "@/components/common/ui";
+import { Button, Card, EmptyState } from "@/components/common/ui";
 import { IamNav } from "@/pages/iam/IamNav";
+import { IamPageHeader } from "@/pages/iam/IamPageHeader";
 
 export function Policies() {
   const { data: policies } = useIAMPolicies();
@@ -18,7 +19,7 @@ export function Policies() {
 
   return (
     <div>
-      <PageHeader title="IAM Policies" description="Create and inspect access policies." />
+      <IamPageHeader />
       <IamNav active="policies" />
       <Card className="mb-6">
         <h3 className="mb-2 font-medium">Policy editor</h3>
@@ -73,7 +74,7 @@ export function Simulate() {
 
   return (
     <div>
-      <PageHeader title="IAM Simulate" description="Test whether an action is allowed." />
+      <IamPageHeader />
       <IamNav active="simulate" />
       <Card className="max-w-lg space-y-4">
         <label className="block space-y-1">
@@ -105,7 +106,7 @@ export function Tokens() {
 
   return (
     <div>
-      <PageHeader title="API Tokens" description="Issue and list bearer tokens." />
+      <IamPageHeader />
       <IamNav active="tokens" />
       <Card className="mb-6 max-w-md">
         <form

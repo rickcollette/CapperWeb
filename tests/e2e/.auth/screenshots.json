@@ -1,0 +1,25 @@
+{
+  "cookies": [
+    {
+      "name": "capper_session",
+      "value": "v1.eyJpZCI6InRva182ZDA1Y2Q2Y2U2MGY2Zjk5IiwicHQiOiJ1c2VyIiwicGkiOiJ1c3JfMTAwOTIyMzBhOTRmZjQ5ZiIsImV4cCI6IjIwMjYtMDYtMjBUMTg6MTk6MDlaIn0.nzT9mZFJpjUN5wOtig2U92y61-GHw4wYWRZOuH2AUVA",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1781979549.675687,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "capper_csrf",
+      "value": "542b4864b67e121624d6b51fbab7b7cf",
+      "domain": "127.0.0.1",
+      "path": "/",
+      "expires": 1781979549.675994,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Strict"
+    }
+  ],
+  "origins": []
+}

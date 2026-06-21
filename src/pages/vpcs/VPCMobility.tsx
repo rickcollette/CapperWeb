@@ -3,7 +3,6 @@ import { Link, useParams } from "react-router-dom";
 import {
   useMobilityPlans,
   useMobilityJobs,
-  useCreateMobilityPlan,
   useApproveMobilityPlan,
   useExecuteMobilityPlan,
   useCancelMobilityPlan,
@@ -58,28 +57,20 @@ export function VPCMobility() {
 
 function PlansTab({ vpcId }: { vpcId: string }) {
   const { data, isLoading } = useMobilityPlans(vpcId);
-  const create = useCreateMobilityPlan(vpcId);
   const approve = useApproveMobilityPlan(vpcId);
   const execute = useExecuteMobilityPlan(vpcId);
   const cancel = useCancelMobilityPlan(vpcId);
-
-  const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({
-    operation: "copy",
-    copyMode: "full",
-    strategy: "rolling",
-    destinationRegionId: "",
-    destinationZoneId: "",
-  });
 
   if (isLoading) return <p className="text-muted">Loading plans…</p>;
 
   return (
     <div>
       <div className="mb-4 flex justify-end">
-        <Button variant="primary" onClick={() => setShowCreate(true)}>
-          <Plus className="h-4 w-4" /> Create Plan
-        </Button>
+        <Link to={`/vpcs/${vpcId}/mobility/plans/new`}>
+          <Button variant="primary">
+            <Plus className="h-4 w-4" /> Create Plan
+          </Button>
+        </Link>
       </div>
 
       {!data?.length && (
@@ -160,88 +151,6 @@ function PlansTab({ vpcId }: { vpcId: string }) {
               ))}
             </tbody>
           </table>
-        </div>
-      )}
-
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
-            <h3 className="mb-4 text-lg font-semibold">Create Mobility Plan</h3>
-            <form
-              className="space-y-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                create.mutate(
-                  {
-                    operation: form.operation,
-                    copyMode: form.copyMode,
-                    strategy: form.strategy,
-                    destinationRegionId: form.destinationRegionId || undefined,
-                    destinationZoneId: form.destinationZoneId || undefined,
-                  },
-                  { onSuccess: () => setShowCreate(false) },
-                );
-              }}
-            >
-              <div>
-                <label className="mb-1 block text-sm text-muted">Operation</label>
-                <select
-                  value={form.operation}
-                  onChange={(e) => setForm({ ...form, operation: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="copy">Copy</option>
-                  <option value="move">Move</option>
-                  <option value="sync">Sync</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-muted">Copy Mode</label>
-                <select
-                  value={form.copyMode}
-                  onChange={(e) => setForm({ ...form, copyMode: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="full">Full</option>
-                  <option value="incremental">Incremental</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-muted">Strategy</label>
-                <select
-                  value={form.strategy}
-                  onChange={(e) => setForm({ ...form, strategy: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                >
-                  <option value="rolling">Rolling</option>
-                  <option value="blue-green">Blue-Green</option>
-                  <option value="cutover">Cutover</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-muted">Destination Region ID</label>
-                <input
-                  value={form.destinationRegionId}
-                  onChange={(e) => setForm({ ...form, destinationRegionId: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-muted">Destination Zone ID</label>
-                <input
-                  value={form.destinationZoneId}
-                  onChange={(e) => setForm({ ...form, destinationZoneId: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button onClick={() => setShowCreate(false)}>Cancel</Button>
-                <Button type="submit" variant="primary" disabled={create.isPending}>
-                  {create.isPending ? "Creating…" : "Create"}
-                </Button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

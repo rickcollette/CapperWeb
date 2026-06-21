@@ -4,6 +4,7 @@ import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import {
   Activity,
   Archive,
+  Ban,
   BarChart2,
   Box,
   BrainCircuit,
@@ -12,6 +13,7 @@ import {
   Cpu,
   Database,
   Factory,
+  Flame,
   Globe,
   HardDrive,
   HeartPulse,
@@ -30,6 +32,7 @@ import {
   Server,
   Settings,
   Shield,
+  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Users,
@@ -37,13 +40,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DaemonBadge } from "@/components/common/ui";
-import { useDaemonStatus, useHealth, useInstances } from "@/api/instances";
+import { useDaemonStatus, useHealth, useInstances, useVersion } from "@/api/instances";
 import { useCurrentUser } from "@/api/access";
 import { ApiError, apiFetch, isPendingError, setCsrfToken } from "@/api/client";
 import { Login } from "@/pages/Login";
-import { ChangePasswordForm } from "@/pages/Account";
+import { ChangePasswordForm } from "@/pages/account/ChangePasswordForm";
 
-import { features, featureEnabled, type FeatureKey } from "@/lib/features";
+import { consoleVersion, features, featureEnabled, type FeatureKey } from "@/lib/features";
 
 const MARKETPLACE_ENABLED = features.marketplace;
 
@@ -52,10 +55,18 @@ type NavItem = {
   label: string;
   icon: React.ElementType;
   end?: boolean;
+  /** When set, NavLink is active for any path under this prefix (e.g. /iam). */
+  matchPrefix?: string;
   /** When set, the item is shown only if this feature is enabled in the profile. */
   feature?: FeatureKey;
 };
-type NavSection = { label: string; icon: React.ElementType; items: NavItem[] };
+type NavSection = {
+  label: string;
+  icon: React.ElementType;
+  items: NavItem[];
+  /** When set, the whole section is shown only to platform admins. */
+  adminOnly?: boolean;
+};
 
 const navSectionsRaw: NavSection[] = [
   {
@@ -76,7 +87,7 @@ const navSectionsRaw: NavSection[] = [
     label: "Network",
     icon: Network,
     items: [
-      { to: "/networks",  label: "Networks",       icon: Network },
+      { to: "/networking", label: "Networking",     icon: Network, feature: "vpcs" },
       { to: "/vpcs",      label: "VPCs",           icon: Network, feature: "vpcs" },
       { to: "/lb",        label: "Load Balancers", icon: Zap },
       { to: "/firewalls", label: "Firewalls",      icon: ShieldCheck },
@@ -146,13 +157,8 @@ const navSectionsRaw: NavSection[] = [
     label: "IAM",
     icon: Shield,
     items: [
-      { to: "/iam/users",    label: "Users",    icon: Shield },
-      { to: "/iam/groups",   label: "Groups",   icon: Shield },
-      { to: "/iam/roles",    label: "Roles",    icon: Shield },
-      { to: "/iam/policies", label: "Policies", icon: Shield },
-      { to: "/iam/simulate", label: "Simulate", icon: Shield },
-      { to: "/iam/tokens",   label: "Tokens",   icon: Shield },
-      { to: "/audit",        label: "Audit Log",icon: ScrollText },
+      { to: "/iam/users", label: "Users & Access", icon: Shield, matchPrefix: "/iam" },
+      { to: "/audit",        label: "Audit Log", icon: ScrollText },
     ],
   },
   {
@@ -179,6 +185,20 @@ const navSectionsRaw: NavSection[] = [
       { to: "/settings", label: "Settings", icon: Settings },
     ],
   },
+  {
+    label: "Admin",
+    icon: ShieldAlert,
+    adminOnly: true,
+    items: [
+      { to: "/routable-ips",        label: "Routable IPs",   icon: Globe },
+      { to: "/admin/ip-exclusions", label: "IP Exclusions",  icon: Lock },
+      { to: "/admin/local-users",   label: "Local Users",    icon: Users },
+      { to: "/admin/limits",        label: "Limits",         icon: BarChart2 },
+      { to: "/admin/storage",       label: "Storage",        icon: HardDrive },
+      { to: "/admin/fail2ban",      label: "Fail2ban",       icon: Ban },
+      { to: "/admin/firewall",      label: "Firewall (UFW)", icon: Flame },
+    ],
+  },
 ];
 
 // Resolve the active deployment profile: drop feature-gated items, then any
@@ -193,6 +213,7 @@ const navSections: NavSection[] = navSectionsRaw
 function NavSection({ section, defaultOpen = false }: { section: NavSection; defaultOpen?: boolean }) {
   const location = useLocation();
   const isActive = section.items.some((item) => {
+    if (item.matchPrefix) return location.pathname.startsWith(item.matchPrefix);
     if (item.end) return location.pathname === item.to;
     return location.pathname.startsWith(item.to);
   });
@@ -220,12 +241,15 @@ function NavSection({ section, defaultOpen = false }: { section: NavSection; def
               key={item.to}
               to={item.to}
               end={item.end}
-              className={({ isActive }) =>
-                cn(
+              className={({ isActive }) => {
+                const active = item.matchPrefix
+                  ? location.pathname.startsWith(item.matchPrefix)
+                  : isActive;
+                return cn(
                   "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition",
-                  isActive ? "bg-primary/10 text-primary" : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
-                )
-              }
+                  active ? "bg-primary/10 text-primary" : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-100",
+                );
+              }}
             >
               <item.icon className="h-3.5 w-3.5 shrink-0" />
               {item.label}
@@ -349,16 +373,25 @@ export function AppShell() {
 
 function AppShellInner({ me }: { me: ReturnType<typeof useCurrentUser>["data"] }) {
   const { data: health } = useHealth();
+  const { data: versionInfo } = useVersion();
   const { data: daemon } = useDaemonStatus();
   const { data: instances } = useInstances();
   const failed = instances?.filter((i) => i.status === "failed").length ?? 0;
+  const versionLabel = versionInfo?.version ?? consoleVersion;
+
+  // Admin-only sections (e.g. the Admin area) are hidden from non-admins.
+  const isAdmin = me?.isAdmin ?? me?.roles?.includes("admin") ?? false;
+  const visibleSections = navSections.filter((s) => !s.adminOnly || isAdmin);
 
   return (
     <div className="flex min-h-screen bg-background">
       <aside className="flex w-60 shrink-0 flex-col border-r border-border bg-[#080a0f]">
         <div className="flex items-center gap-2 border-b border-border px-4 py-4">
-          <Activity className="h-5 w-5 text-primary" />
-          <span className="font-semibold tracking-wide">Capper</span>
+          <Activity className="h-5 w-5 shrink-0 text-primary" />
+          <div className="min-w-0 leading-tight">
+            <div className="font-semibold tracking-wide">Capper</div>
+            <div className="text-[10px] text-muted">v{versionLabel}</div>
+          </div>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           <NavLink
@@ -374,7 +407,7 @@ function AppShellInner({ me }: { me: ReturnType<typeof useCurrentUser>["data"] }
             <LayoutDashboard className="h-4 w-4" />
             Dashboard
           </NavLink>
-          {navSections.map((section) => (
+          {visibleSections.map((section) => (
             <NavSection key={section.label} section={section} />
           ))}
         </nav>

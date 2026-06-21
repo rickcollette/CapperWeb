@@ -23,8 +23,15 @@ export interface CurrentUser {
   principalId?: string;
 }
 
-export function useRBACUsers() {
-  return useQuery({ queryKey: ["rbac-users"], queryFn: () => apiFetch<RBACUser[]>("/users") });
+// useRBACUsers lists users, optionally restricted to a single role. The console
+// uses this to split platform operators (role=admin, under Admin) from ordinary
+// users (role=member, under IAM).
+export function useRBACUsers(role?: string) {
+  const suffix = role ? `?role=${encodeURIComponent(role)}` : "";
+  return useQuery({
+    queryKey: ["rbac-users", role ?? "all"],
+    queryFn: () => apiFetch<RBACUser[]>(`/users${suffix}`),
+  });
 }
 
 // useCurrentUser resolves the signed-in identity. retry:false so a pending-user

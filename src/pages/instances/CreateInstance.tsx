@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
-import { useCreateInstance } from "@/api/instances";
+import { useCreateInstance, useInstanceDiskCapacity } from "@/api/instances";
 import { useImages } from "@/api/images";
-import { useCapsuleTypes, useCapInitTemplates, useNetworks, useVolumes } from "@/api/resources";
+import { useVPCs, useVPCSubnets } from "@/api/topology";
+import { useCapsuleTypes, useCapInitTemplates, useVolumes } from "@/api/resources";
+import { useKeyPairs, useSecurityGroups } from "@/api/vpcnet";
 import { Button, Card, PageHeader } from "@/components/common/ui";
 import { useLaunchWizard, WIZARD_STEPS } from "@/stores/launchWizard";
 import { formatBytes, imageDisplayName } from "@/lib/utils";
@@ -14,11 +16,16 @@ export function CreateInstance() {
   const [searchParams] = useSearchParams();
   const { data: images } = useImages();
   const { data: types } = useCapsuleTypes();
-  const { data: networks } = useNetworks();
-  const { data: volumes } = useVolumes();
-  const { data: templates } = useCapInitTemplates();
+  const { data: vpcs } = useVPCs();
   const create = useCreateInstance();
   const wizard = useLaunchWizard();
+  const activeVpc = wizard.vpcId || vpcs?.[0]?.slug || vpcs?.[0]?.id || "";
+  const { data: subnets } = useVPCSubnets(activeVpc, "launch");
+  const { data: securityGroups } = useSecurityGroups(activeVpc);
+  const { data: keyPairs } = useKeyPairs();
+  const { data: volumes } = useVolumes();
+  const { data: templates } = useCapInitTemplates();
+  const { data: diskCap } = useInstanceDiskCapacity();
   const [envKey, setEnvKey] = useState("");
   const [envVal, setEnvVal] = useState("");
 
@@ -50,14 +57,23 @@ export function CreateInstance() {
   }, [searchParams, images]);
 
   const submit = () => {
+    if (!wizard.subnetId) return;
+    if (!diskCap?.poolConfigured) return;
     create.mutate(
       {
         image: wizard.image,
         name: wizard.name || undefined,
         instanceType: wizard.instanceType || undefined,
-        network: wizard.network || undefined,
+        vpcId: wizard.vpcId || undefined,
+        subnetId: wizard.subnetId,
+        securityGroupIds: wizard.securityGroupIds.length ? wizard.securityGroupIds : undefined,
+        keyName: wizard.keyName || undefined,
+        publicIpBehavior: wizard.publicIpBehavior || undefined,
+        terminationProtection: wizard.terminationProtection,
+        tags: Object.keys(wizard.tags).length ? wizard.tags : undefined,
         env: Object.keys(wizard.env).length ? wizard.env : undefined,
         volumes: wizard.volumes.length ? wizard.volumes : undefined,
+        diskBytes: wizard.diskGiB ? Math.round(Number(wizard.diskGiB) * 1024 ** 3) : undefined,
         capInitTemplate: wizard.capInitMode === "template" ? wizard.capInitTemplate : undefined,
         capInitContent: wizard.capInitMode === "paste" ? wizard.capInitContent : undefined,
       },
@@ -72,7 +88,7 @@ export function CreateInstance() {
 
   return (
     <div>
-      <PageHeader title="Launch Instance" description="Six-step launch wizard." />
+      <PageHeader title="Launch Instance" description="Nine-step EC2-style launch wizard." />
       <div className="mb-6 flex flex-wrap gap-2">
         {WIZARD_STEPS.map((label, i) => (
           <button
@@ -90,6 +106,19 @@ export function CreateInstance() {
 
       <Card className="max-w-2xl">
         {wizard.step === 0 && (
+          <div className="space-y-4">
+            <label className="block space-y-1">
+              <span className="text-sm text-muted">Name</span>
+              <input
+                value={wizard.name}
+                onChange={(e) => wizard.update({ name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              />
+            </label>
+          </div>
+        )}
+
+        {wizard.step === 1 && (
           <label className="block space-y-1">
             <span className="text-sm text-muted">Image</span>
             <select
@@ -106,10 +135,10 @@ export function CreateInstance() {
           </label>
         )}
 
-        {wizard.step === 1 && (
+        {wizard.step === 2 && (
           <div className="space-y-4">
             <label className="block space-y-1">
-              <span className="text-sm text-muted">Capsule type</span>
+              <span className="text-sm text-muted">Instance type</span>
               <select
                 value={wizard.instanceType}
                 onChange={(e) => wizard.update({ instanceType: e.target.value })}
@@ -124,35 +153,149 @@ export function CreateInstance() {
                 ))}
               </select>
             </label>
-            <label className="block space-y-1">
-              <span className="text-sm text-muted">Name (optional)</span>
-              <input
-                value={wizard.name}
-                onChange={(e) => wizard.update({ name: e.target.value })}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2"
-              />
-            </label>
           </div>
         )}
 
-        {wizard.step === 2 && (
+        {wizard.step === 3 && (
           <label className="block space-y-1">
-            <span className="text-sm text-muted">Network</span>
+            <span className="text-sm text-muted">SSH key pair</span>
             <select
-              value={wizard.network}
-              onChange={(e) => wizard.update({ network: e.target.value })}
+              value={wizard.keyName}
+              onChange={(e) => wizard.update({ keyName: e.target.value })}
               className="w-full rounded-lg border border-border bg-background px-3 py-2"
             >
-              <option value="">No network</option>
-              {networks?.map((n) => (
-                <option key={n.id} value={n.name}>{n.name} ({n.subnet})</option>
+              <option value="">No key pair</option>
+              {keyPairs?.map((k: { name: string }) => (
+                <option key={k.name} value={k.name}>{k.name}</option>
               ))}
             </select>
           </label>
         )}
 
-        {wizard.step === 3 && (
+        {wizard.step === 4 && (
           <div className="space-y-4">
+            <label className="block space-y-1">
+              <span className="text-sm text-muted">VPC</span>
+              <select
+                value={wizard.vpcId}
+                onChange={(e) => wizard.update({ vpcId: e.target.value, subnetId: "" })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              >
+                <option value="">Select VPC...</option>
+                {vpcs?.map((v: { id: string; name: string; slug?: string }) => (
+                  <option key={v.id} value={v.slug || v.id}>{v.name} ({v.id})</option>
+                ))}
+              </select>
+            </label>
+            <label className="block space-y-1">
+              <span className="text-sm text-muted">Subnet</span>
+              <select
+                value={wizard.subnetId}
+                onChange={(e) => wizard.update({ subnetId: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              >
+                <option value="">Select subnet...</option>
+                {subnets?.map((s: { id: string; name: string; cidr: string }) => (
+                  <option key={s.id} value={s.id}>{s.name} ({s.cidr})</option>
+                ))}
+              </select>
+            </label>
+            {!diskCap?.poolConfigured && (
+              <p className="text-sm text-amber-400">
+                Configure a default storage pool under Admin → Storage before launching instances.
+              </p>
+            )}
+            <label className="block space-y-1">
+              <span className="text-sm text-muted">Public IP</span>
+              <select
+                value={wizard.publicIpBehavior}
+                onChange={(e) => wizard.update({ publicIpBehavior: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              >
+                <option value="none">Do not assign</option>
+                <option value="auto">Auto-assign</option>
+              </select>
+            </label>
+          </div>
+        )}
+
+        {wizard.step === 5 && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Select security groups to attach at launch.</p>
+            {!activeVpc ? (
+              <p className="text-sm text-amber-400">Select a VPC in the previous step.</p>
+            ) : !securityGroups?.length ? (
+              <p className="text-sm text-muted">No security groups in this VPC. The default group applies.</p>
+            ) : (
+              <div className="space-y-2">
+                {securityGroups.map((sg: { id: string; name: string; description?: string }) => {
+                  const checked = wizard.securityGroupIds.includes(sg.id);
+                  return (
+                    <label key={sg.id} className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          const ids = checked
+                            ? wizard.securityGroupIds.filter((id) => id !== sg.id)
+                            : [...wizard.securityGroupIds, sg.id];
+                          wizard.update({ securityGroupIds: ids });
+                        }}
+                      />
+                      <span className="font-medium">{sg.name}</span>
+                      {sg.description && <span className="text-muted">{sg.description}</span>}
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {wizard.step === 6 && (
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border p-3">
+              <div className="mb-1 text-sm font-medium">Root disk size</div>
+              {diskCap?.poolConfigured ? (
+                <p className="mb-2 text-xs text-muted">
+                  Drawn from pool <span className="font-mono">{diskCap.poolName}</span> ({diskCap.backend})
+                  {diskCap.degraded
+                    ? " — pool is degraded"
+                    : ` — ${formatBytes(diskCap.availableBytes)} available of ${formatBytes(diskCap.totalBytes)}`}
+                </p>
+              ) : (
+                <p className="mb-2 text-xs text-muted">
+                  No default instance pool set — the disk lives on the control-plane host. To draw disks from a storage pool (e.g. your LVM VG),
+                  set it under <span className="font-medium">Admin → Storage → Default instance disk pool</span>. You can still set a size below.
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={wizard.diskGiB}
+                  onChange={(e) => wizard.update({ diskGiB: e.target.value })}
+                  placeholder={(() => {
+                    const t = sortedTypes.find((x) => x.name === wizard.instanceType);
+                    return t?.diskBytes ? String(Math.round(t.diskBytes / 1024 ** 3)) : "default";
+                  })()}
+                  className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+                <span className="text-sm text-muted">GiB</span>
+                {diskCap?.poolConfigured && !diskCap.degraded && (
+                  <Button
+                    onClick={() => wizard.update({ diskGiB: String(Math.floor(diskCap.availableBytes / 1024 ** 3)) })}
+                  >
+                    Max
+                  </Button>
+                )}
+              </div>
+              {wizard.diskGiB && diskCap?.poolConfigured && Number(wizard.diskGiB) * 1024 ** 3 > diskCap.availableBytes && (
+                <p className="mt-2 text-xs text-red-400">Exceeds available pool capacity ({formatBytes(diskCap.availableBytes)}).</p>
+              )}
+            </div>
+
             <p className="text-sm text-muted">Attach existing volumes at launch.</p>
             <div className="flex flex-wrap gap-2">
               <select
@@ -197,7 +340,7 @@ export function CreateInstance() {
           </div>
         )}
 
-        {wizard.step === 4 && (
+        {wizard.step === 7 && (
           <div className="space-y-4">
             <div className="flex gap-2">
               {(["none", "template", "paste"] as const).map((m) => (
@@ -238,17 +381,23 @@ export function CreateInstance() {
           </div>
         )}
 
-        {wizard.step === 5 && (
+        {wizard.step === 8 && (
           <div className="space-y-4">
             <dl className="grid gap-2 text-sm">
               <div><dt className="text-muted">Image</dt><dd className="font-mono">{imageDisplayName(wizard.image)}</dd></div>
               <div><dt className="text-muted">Type</dt><dd>{wizard.instanceType || "default"}</dd></div>
-              <div><dt className="text-muted">Network</dt><dd>{wizard.network || "none"}</dd></div>
+              <div><dt className="text-muted">VPC / Subnet</dt><dd>{wizard.vpcId || "—"} / {wizard.subnetId || "—"}</dd></div>
+              <div><dt className="text-muted">Key pair</dt><dd>{wizard.keyName || "none"}</dd></div>
+              <div><dt className="text-muted">Root disk</dt><dd>{wizard.diskGiB ? `${wizard.diskGiB} GiB` : "type default"}</dd></div>
               <div><dt className="text-muted">Volumes</dt><dd>{wizard.volumes.length || "none"}</dd></div>
               <div><dt className="text-muted">CapInit</dt><dd>{wizard.capInitMode}</dd></div>
             </dl>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={wizard.terminationProtection} onChange={(e) => wizard.update({ terminationProtection: e.target.checked })} />
+              Enable termination protection
+            </label>
             {create.error && <p className="text-sm text-red-400">{create.error.message}</p>}
-            <Button variant="primary" disabled={create.isPending || !wizard.image} onClick={submit}>
+            <Button variant="primary" disabled={create.isPending || !wizard.image || !wizard.subnetId || !diskCap?.poolConfigured} onClick={submit}>
               {create.isPending ? "Launching..." : "Launch Instance"}
             </Button>
           </div>
@@ -256,8 +405,12 @@ export function CreateInstance() {
 
         <div className="mt-6 flex justify-between">
           <Button disabled={wizard.step === 0} onClick={wizard.back}>Back</Button>
-          {wizard.step < 5 && (
-            <Button variant="primary" onClick={() => { if (wizard.step === 0 && !wizard.image) return; wizard.next(); }}>Next</Button>
+          {wizard.step < 8 && (
+            <Button variant="primary" onClick={() => {
+              if (wizard.step === 1 && !wizard.image) return;
+              if (wizard.step === 4 && !wizard.subnetId) return;
+              wizard.next();
+            }}>Next</Button>
           )}
         </div>
       </Card>

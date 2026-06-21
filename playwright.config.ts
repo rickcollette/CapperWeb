@@ -7,7 +7,7 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { outputFolder: "tests/report", open: "never" }]],
   use: {
-    baseURL: "http://127.0.0.1:8687",
+    baseURL: process.env.CAPPER_WEB_URL ?? "http://127.0.0.1:8687",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     actionTimeout: 8000,
@@ -15,7 +15,21 @@ export default defineConfig({
   },
   projects: [
     {
+      name: "screenshots-setup",
+      testMatch: /screenshots\.auth\.setup\.ts/,
+    },
+    {
+      name: "screenshots",
+      testMatch: /screenshots\.spec\.ts/,
+      dependencies: ["screenshots-setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        storageState: "tests/e2e/.auth/screenshots.json",
+      },
+    },
+    {
       name: "chromium",
+      testIgnore: [/screenshots\.spec\.ts/, /screenshots\.auth\.setup\.ts/],
       use: { ...devices["Desktop Chrome"] },
     },
   ],

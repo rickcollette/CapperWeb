@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useCreateIAMRole, useIAMRoles } from "@/api/resources";
-import { Button, Card, EmptyState, PageHeader } from "@/components/common/ui";
+import { Button, Card, EmptyState } from "@/components/common/ui";
 import { IamNav } from "@/pages/iam/IamNav";
+import { IamPageHeader } from "@/pages/iam/IamPageHeader";
 
 export function Roles() {
   const { data: roles } = useIAMRoles();
@@ -10,7 +11,7 @@ export function Roles() {
 
   return (
     <div>
-      <PageHeader title="IAM Roles" description="Roles bundle policies for principals." />
+      <IamPageHeader />
       <IamNav active="roles" />
       <Card className="mb-6 max-w-md">
         <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); create.mutate({ name }, { onSuccess: () => setName("") }); }}>

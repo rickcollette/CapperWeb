@@ -6,8 +6,9 @@ import {
   useAddGroupMember,
   useRemoveGroupMember,
 } from "@/api/resources";
-import { Button, Card, ConfirmDialog, EmptyState, PageHeader } from "@/components/common/ui";
+import { Button, Card, ConfirmDialog, EmptyState } from "@/components/common/ui";
 import { IamNav } from "@/pages/iam/IamNav";
+import { IamPageHeader } from "@/pages/iam/IamPageHeader";
 import { ChevronDown, ChevronRight, UserPlus, X } from "lucide-react";
 import type { IAMGroup } from "@/types/capper";
 
@@ -132,7 +133,7 @@ export function Groups() {
 
   return (
     <div>
-      <PageHeader title="IAM Groups" description="Group membership for policy assignment." />
+      <IamPageHeader />
       <IamNav active="groups" />
       <Card className="mb-6 max-w-md">
         <form

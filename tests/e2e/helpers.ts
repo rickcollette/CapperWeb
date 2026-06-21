@@ -2,9 +2,35 @@ import { Page, expect } from "@playwright/test";
 
 /** Navigate to a route and wait for the app shell to be ready. */
 export async function goto(page: Page, path: string) {
+  if (path === "/") {
+    await loginIfNeeded(page);
+    return;
+  }
+  await loginIfNeeded(page);
   await page.goto(path);
-  // AppShell sidebar is always present
-  await page.waitForSelector("nav", { timeout: 10000 });
+  await page.waitForSelector("nav", { timeout: 15000 });
+}
+
+/** Sign in when the login gate is shown (local capper-run / docs screenshots). */
+export async function loginIfNeeded(page: Page) {
+  await page.goto("/");
+  const login = page.getByPlaceholder("Username or email");
+  if (!(await login.isVisible({ timeout: 5000 }).catch(() => false))) {
+    return;
+  }
+  const user = process.env.DOCS_SCREENSHOT_USER ?? "docs";
+  const pass = process.env.DOCS_SCREENSHOT_PASS ?? "docs-demo";
+  await login.fill(user);
+  await page.getByPlaceholder("Password").fill(pass);
+  await page.getByRole("button", { name: /sign in/i }).click();
+  const forced = page.getByRole("heading", { name: "Set a new password" });
+  if (await forced.isVisible({ timeout: 5000 }).catch(() => false)) {
+    await page.getByPlaceholder("Current password").fill(pass);
+    await page.getByPlaceholder("New password").fill(pass);
+    await page.getByPlaceholder("Confirm new password").fill(pass);
+    await page.getByRole("button", { name: /update password/i }).click();
+  }
+  await page.waitForSelector("nav", { timeout: 15000 });
 }
 
 /** Assert no uncaught JS errors on the page (call after navigation). */

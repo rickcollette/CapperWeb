@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "npm audit fix || true",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -24,6 +25,9 @@
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.6.0",
     "zustand": "^5.0.14"
+  },
+  "overrides": {
+    "dompurify": "^3.4.11"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

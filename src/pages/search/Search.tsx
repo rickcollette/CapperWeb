@@ -21,7 +21,7 @@ function useSearch(q: string) {
 const TYPE_LINKS: Record<string, (r: SearchResult) => string> = {
   instance: (r) => `/instances/${r.id}`,
   image: (r) => `/images/${encodeURIComponent(r.name)}`,
-  network: (r) => `/networks/${r.name}`,
+  vpc: (r) => `/vpcs/${r.id}`,
   lb: (r) => `/lb/${r.name}`,
   stack: (r) => `/stacks/${r.name}`,
 };

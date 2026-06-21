@@ -13,7 +13,7 @@ const ROUTES = [
   "/capsules",
   "/marketplace",
   "/factory",
-  "/networks",
+  "/vpcs",
   "/storage",
   "/dns",
   "/capinit",
@@ -42,6 +42,11 @@ const ROUTES = [
   "/search",
 ];
 
+test("/iam/access redirects to users", async ({ page }) => {
+  await page.goto("/iam/access");
+  await expect(page).toHaveURL(/\/iam\/users$/);
+});
+
 for (const route of ROUTES) {
   test(`${route} renders app shell`, async ({ page }) => {
     await page.goto(route);
@@ -66,7 +71,7 @@ test("sidebar nav links are all present", async ({ page }) => {
     "Dashboard",
     "Instances",
     "Images",
-    "Networks",
+    "VPCs",
     "Storage",
     "DNS",
     "Load Balancers",
@@ -88,6 +93,7 @@ test("sidebar nav links are all present", async ({ page }) => {
     "Ingress",
     "Queues",
     "IAM",
+    "Users & Access",
     "Audit",
     "Settings",
   ];

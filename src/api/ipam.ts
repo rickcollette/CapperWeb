@@ -81,3 +81,47 @@ export function useReleaseIP() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ips"] }),
   });
 }
+
+// ---- admin IP exclusions ---------------------------------------------------
+// Addresses an admin has unlisted so the app stack never auto-allocates them
+// (e.g. an address used by the Capper Server Host inside a small subnet).
+
+export interface IPExclusion {
+  id: string;
+  address: string;
+  poolId?: string;
+  reason?: string;
+  createdBy?: string;
+  createdAt?: string;
+}
+
+export function useIPExclusions(pool?: string) {
+  const suffix = pool ? `?pool=${encodeURIComponent(pool)}` : "";
+  return useQuery({
+    queryKey: ["ip-exclusions", pool],
+    queryFn: () => apiFetch<IPExclusion[]>(`/admin/ip-exclusions${suffix}`),
+  });
+}
+
+export function useAddIPExclusion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { address: string; poolId?: string; reason?: string }) =>
+      apiFetch("/admin/ip-exclusions", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ip-exclusions"] });
+      qc.invalidateQueries({ queryKey: ["ips"] });
+    },
+  });
+}
+
+export function useRemoveIPExclusion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch(`/admin/ip-exclusions/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ip-exclusions"] });
+      qc.invalidateQueries({ queryKey: ["ips"] });
+    },
+  });
+}

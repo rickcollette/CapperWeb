@@ -1,5 +1,20 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "./client";
+import type { SubnetDependencies, VPCDependencies, VPCDetail } from "@/types/capper";
+import type { SubnetPurpose } from "@/lib/subnetKinds";
+
+function invalidateVpc(qc: ReturnType<typeof useQueryClient>, vpcRef: string) {
+  qc.invalidateQueries({ queryKey: ["vpcs"] });
+  qc.invalidateQueries({ queryKey: ["vpcs", vpcRef] });
+  qc.invalidateQueries({ queryKey: ["vpcs", vpcRef, "detail"] });
+  qc.invalidateQueries({ queryKey: ["vpcs", vpcRef, "summary"] });
+  qc.invalidateQueries({ queryKey: ["vpcs", vpcRef, "subnets"] });
+  qc.invalidateQueries({ queryKey: ["route-tables", vpcRef] });
+  qc.invalidateQueries({ queryKey: ["security-groups", vpcRef] });
+  qc.invalidateQueries({ queryKey: ["network-acls", vpcRef] });
+  qc.invalidateQueries({ queryKey: ["internet-gateways", vpcRef] });
+  qc.invalidateQueries({ queryKey: ["nat-gateways", vpcRef] });
+}
 
 // ─── VPCs ──────────────────────────────────────────────────────────────────
 
@@ -7,11 +22,67 @@ export function useVPCs() {
   return useQuery({ queryKey: ["vpcs"], queryFn: () => apiFetch<any[]>("/vpcs") });
 }
 
+export function useVPCDetail(vpcRef: string) {
+  return useQuery({
+    queryKey: ["vpcs", vpcRef, "detail"],
+    queryFn: () => apiFetch<VPCDetail>(`/vpcs/${vpcRef}/detail`),
+    enabled: !!vpcRef,
+  });
+}
+
+export function useVPCDependencies(vpcRef: string) {
+  return useQuery({
+    queryKey: ["vpcs", vpcRef, "dependencies"],
+    queryFn: () => apiFetch<VPCDependencies>(`/vpcs/${vpcRef}/dependencies`),
+    enabled: !!vpcRef,
+  });
+}
+
+export function useSubnetDependencies(subnetId: string) {
+  return useQuery({
+    queryKey: ["subnets", subnetId, "dependencies"],
+    queryFn: () => apiFetch<SubnetDependencies>(`/subnets/${subnetId}/dependencies`),
+    enabled: !!subnetId,
+  });
+}
+
+export interface CreateVPCBody {
+  name: string;
+  slug?: string;
+  cidr: string;
+  description?: string;
+  dnsDomain?: string;
+  enableFlowLogs?: boolean;
+  attachInternetGateway?: boolean;
+  initialSubnets?: Array<{
+    name: string;
+    cidr: string;
+    kind?: string;
+    zoneId?: string;
+    autoAssignPublicIp?: boolean;
+  }>;
+  natGateway?: { subnetId?: string; subnetCidr?: string; name?: string; publicIp?: string };
+}
+
 export function useCreateVPC() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: any) => apiFetch("/vpcs", { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vpcs"] }),
+    mutationFn: (body: CreateVPCBody) =>
+      apiFetch<VPCDetail>("/vpcs", { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["vpcs"] });
+      if (data?.vpc?.id) invalidateVpc(qc, data.vpc.id);
+      if (data?.vpc?.slug) invalidateVpc(qc, data.vpc.slug);
+    },
+  });
+}
+
+export function usePatchVPC(vpcRef: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiFetch(`/vpcs/${vpcRef}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => invalidateVpc(qc, vpcRef),
   });
 }
 
@@ -23,10 +94,11 @@ export function useDeleteVPC() {
   });
 }
 
-export function useVPCSubnets(vpcSlug: string) {
+export function useVPCSubnets(vpcSlug: string, purpose?: SubnetPurpose) {
+  const qs = purpose ? `?purpose=${encodeURIComponent(purpose)}` : "";
   return useQuery({
-    queryKey: ["vpcs", vpcSlug, "subnets"],
-    queryFn: () => apiFetch<any[]>(`/vpcs/${vpcSlug}/subnets`),
+    queryKey: ["vpcs", vpcSlug, "subnets", purpose ?? "all"],
+    queryFn: () => apiFetch<any[]>(`/vpcs/${vpcSlug}/subnets${qs}`),
     enabled: !!vpcSlug,
   });
 }
@@ -36,7 +108,15 @@ export function useCreateVPCSubnet(vpcSlug: string) {
   return useMutation({
     mutationFn: (body: any) =>
       apiFetch(`/vpcs/${vpcSlug}/subnets`, { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["vpcs", vpcSlug, "subnets"] }),
+    onSuccess: () => invalidateVpc(qc, vpcSlug),
+  });
+}
+
+export function useDeleteSubnet(vpcRef: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (subnetId: string) => apiFetch(`/subnets/${subnetId}`, { method: "DELETE" }),
+    onSuccess: () => invalidateVpc(qc, vpcRef),
   });
 }
 

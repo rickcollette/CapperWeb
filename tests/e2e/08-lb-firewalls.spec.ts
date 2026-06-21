@@ -14,33 +14,41 @@ test.describe("Load Balancers", () => {
     await expectHeading(page, "Load Balancers");
   });
 
-  test("Create LB button is present", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /create|new/i }).first()).toBeVisible({ timeout: 8000 });
+  test("Create LB link navigates to wizard", async ({ page }) => {
+    await page.getByRole("link", { name: /create lb/i }).click();
+    await page.waitForURL(/\/lb\/new/);
+    await expectHeading(page, "Create Load Balancer");
   });
 
   test("table headers present", async ({ page }) => {
-    for (const col of ["Name", "Mode", "Status"]) {
+    for (const col of ["Name", "Scheme", "VIP", "Status"]) {
       await expect(page.getByText(col, { exact: false }).first()).toBeVisible({ timeout: 8000 });
     }
   });
 
-  test("create LB modal opens", async ({ page }) => {
-    await page.getByRole("button", { name: /create|new/i }).first().click();
-    await expect(page.getByPlaceholder(/lb name|name/i).first()).toBeVisible({ timeout: 6000 });
+  test("create wizard step 1 has name and type", async ({ page }) => {
+    await goto(page, "/lb/new");
+    await expect(page.getByText(/identity/i).first()).toBeVisible({ timeout: 6000 });
+    await expect(page.locator("input").first()).toBeVisible();
+    await expect(page.getByText(/application/i).first()).toBeVisible();
   });
 
-  test("create LB modal has mode selector (TCP/HTTP)", async ({ page }) => {
-    await page.getByRole("button", { name: /create|new/i }).first().click();
-    const select = page.locator("select").first();
-    await expect(select).toBeVisible({ timeout: 6000 });
-    await expect(page.getByRole("option", { name: /tcp/i }).first()).toBeVisible();
-    await expect(page.getByRole("option", { name: /http/i }).first()).toBeVisible();
+  test("create wizard step 2 has scheme toggle", async ({ page }) => {
+    await goto(page, "/lb/new");
+    await page.locator("input").first().fill(LB_NAME);
+    await page.getByRole("button", { name: /next/i }).click();
+    await expect(page.getByText(/internal/i).first()).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText(/internet-facing/i).first()).toBeVisible();
   });
 
   test("create a load balancer and verify it appears", async ({ page }) => {
-    await page.getByRole("button", { name: /create|new/i }).first().click();
-    await page.getByPlaceholder(/lb name|name/i).first().fill(LB_NAME);
-    await page.getByRole("button", { name: /create/i }).last().click();
+    await goto(page, "/lb/new");
+    await page.locator("input").first().fill(LB_NAME);
+    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByRole("button", { name: /next/i }).click();
+    await page.getByLabel(/skip first listener/i).check();
+    await page.getByRole("button", { name: /create load balancer/i }).click();
+    await page.waitForURL(new RegExp(`/lb/${LB_NAME}`), { timeout: 15000 });
     await expect(page.getByText(LB_NAME, { exact: false })).toBeVisible({ timeout: 10000 });
   });
 
@@ -54,14 +62,17 @@ test.describe("Load Balancers", () => {
 });
 
 test.describe("LB Detail", () => {
-  test("renders backends table and add backend form", async ({ page }) => {
+  test("renders tabbed detail with listeners and target groups", async ({ page }) => {
     await goto(page, "/lb");
     const link = page.locator("table a").first();
     if (await link.count() === 0) { test.skip(); return; }
     await link.click();
     await page.waitForURL(/\/lb\//);
-    await expect(page.getByText(/backend|address/i).first()).toBeVisible({ timeout: 8000 });
-    await expect(page.getByRole("button", { name: /add backend/i })).toBeVisible({ timeout: 8000 });
+    for (const tab of ["Overview", "Listeners", "Target Groups"]) {
+      await expect(page.getByRole("button", { name: tab })).toBeVisible({ timeout: 8000 });
+    }
+    await page.getByRole("button", { name: "Listeners" }).click();
+    await expect(page.getByRole("button", { name: /add listener/i })).toBeVisible({ timeout: 8000 });
   });
 });
 
@@ -89,14 +100,12 @@ test.describe("Firewalls", () => {
   });
 
   test("create a firewall and verify it appears", async ({ page }) => {
-    await goto(page, "/networks");
-    const netLink = page.locator("table a").first();
-    if (await netLink.count() === 0) { test.skip(); return; }
-    const netName = await netLink.textContent();
+    await goto(page, "/vpcs");
+    const vpcLink = page.locator("table a, [data-testid='vpc-row']").first();
+    if (await vpcLink.count() === 0) { test.skip(); return; }
 
     await goto(page, "/firewalls");
     await page.getByPlaceholder(/firewall name|name/i).first().fill(FW_NAME);
-    // Select a network if a dropdown is present
     const netSelect = page.locator("select").first();
     if (await netSelect.count() > 0) {
       await netSelect.selectOption({ index: 1 });

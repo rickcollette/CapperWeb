@@ -69,6 +69,31 @@ export function useInstanceActions(id: string) {
   };
 }
 
+export type BulkInstanceAction = "start" | "stop" | "restart" | "delete";
+
+async function runInstanceAction(id: string, action: BulkInstanceAction) {
+  if (action === "delete") {
+    return apiFetch(`/instances/${id}`, { method: "DELETE" });
+  }
+  return apiFetch(`/instances/${id}/${action}`, { method: "POST" });
+}
+
+export function useBulkInstanceActions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ids, action }: { ids: string[]; action: BulkInstanceAction }) => {
+      const results = await Promise.allSettled(ids.map((id) => runInstanceAction(id, action)));
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        const msg = failed.map((r) => (r as PromiseRejectedResult).reason?.message ?? "failed").join("; ");
+        throw new Error(`${failed.length}/${ids.length} failed: ${msg}`);
+      }
+      return results.length;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
 export function useInstanceLogs(id: string, stream: "stdout" | "stderr" | "startup-error" = "stdout") {
   const path =
     stream === "startup-error"
@@ -113,12 +138,37 @@ export function useCreateInstance() {
       name?: string;
       instanceType?: string;
       network?: string;
+      vpcId?: string;
+      subnetId?: string;
+      securityGroupIds?: string[];
+      keyName?: string;
+      privateIpAddress?: string;
+      publicIpBehavior?: string;
+      terminationProtection?: boolean;
+      tags?: Record<string, string>;
       env?: Record<string, string>;
       capInitTemplate?: string;
       capInitContent?: string;
       volumes?: { name: string; mountPath: string }[];
+      diskBytes?: number;
     }) => apiFetch<CapperInstance>("/instances", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+  });
+}
+
+export interface InstanceDiskCapacity {
+  poolConfigured: boolean;
+  poolName?: string;
+  backend?: string;
+  availableBytes: number;
+  totalBytes: number;
+  degraded?: boolean;
+}
+
+export function useInstanceDiskCapacity() {
+  return useQuery({
+    queryKey: ["instance-disk-capacity"],
+    queryFn: () => apiFetch<InstanceDiskCapacity>("/instance-disk-capacity"),
   });
 }
 
@@ -183,5 +233,14 @@ export function useHealth() {
     queryKey: ["health"],
     queryFn: () => apiFetch<{ status: string }>("/health"),
     refetchInterval: 30000,
+  });
+}
+
+export function useVersion() {
+  return useQuery({
+    queryKey: ["version"],
+    queryFn: () =>
+      apiFetch<{ version: string; commit?: string; buildDate?: string }>("/version"),
+    staleTime: 5 * 60 * 1000,
   });
 }

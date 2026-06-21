@@ -21,7 +21,8 @@ export function InstanceTerminal({ instanceId }: { instanceId: string }) {
 
     const connect = () => {
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(`${proto}//${window.location.host}/api/v1/instances/${instanceId}/terminal`);
+      // Advertise the terminal type so curses apps (top, less, vi) work in the shell.
+      const ws = new WebSocket(`${proto}//${window.location.host}/api/v1/instances/${instanceId}/terminal?term=xterm-256color`);
       wsRef.current = ws;
       ws.onmessage = (ev) => term.write(typeof ev.data === "string" ? ev.data : "");
       ws.onopen = () => term.writeln("\r\nConnected.\r\n");

@@ -1,10 +1,15 @@
 export type InstanceState =
   | "created"
+  | "pending"
   | "running"
   | "stopped"
-  | "failed"
-  | "starting"
   | "stopping"
+  | "shutting-down"
+  | "terminated"
+  | "rebooting"
+  | "failed"
+  | "error"
+  | "starting"
   | "unknown";
 
 export interface ResourceLimits {
@@ -12,6 +17,7 @@ export interface ResourceLimits {
   cpuTimeSecs?: number;
   maxProcesses?: number;
   fileSizeBytes?: number;
+  diskBytes?: number;
 }
 
 export interface CapperInstance {
@@ -23,17 +29,32 @@ export interface CapperInstance {
   status: InstanceState;
   pid: number;
   runtimeMode?: string;
+  instanceType?: string;
   capsuleType?: string;
   hostname?: string;
   networkId?: string;
   networkIp?: string;
+  vpcId?: string;
+  subnetId?: string;
+  primaryEniId?: string;
+  privateIpAddress?: string;
+  publicIpAddress?: string;
+  securityGroupIds?: string[];
+  keyName?: string;
+  terminationProtection?: boolean;
+  shutdownBehavior?: string;
   resources?: ResourceLimits;
   createdAt: string;
   startedAt?: string;
   stoppedAt?: string | null;
   labels?: Record<string, string>;
+  tags?: Record<string, string>;
   entrypoint?: string[];
   restartPolicy?: string;
+  realmId?: string;
+  regionId?: string;
+  zoneId?: string;
+  nodeId?: string;
 }
 
 export interface CapperImage {
@@ -239,11 +260,47 @@ export interface ApiEnvelope<T> {
 export interface LoadBalancer {
   id: string;
   name: string;
-  mode: "tcp" | "http";
+  scheme?: "internal" | "internet-facing";
+  type?: "application" | "network";
+  vpcId?: string;
+  subnetId?: string;
+  vipAddress?: string;
+  routableIpId?: string;
+  dnsName?: string;
+  mode: "tcp" | "http" | "https";
   listenAddr: string;
   status: string;
   algorithm: string;
   selector: string;
+  tlsCertName?: string;
+  networkId?: string;
+}
+
+export interface LBListener {
+  id: string;
+  loadBalancerId: string;
+  targetGroupId: string;
+  protocol: string;
+  port: number;
+  certificateId?: string;
+  createdAt?: string;
+}
+
+export interface LBTargetGroup {
+  id: string;
+  name: string;
+  loadBalancerId?: string;
+  vpcId?: string;
+  protocol: string;
+  port: number;
+  healthPath?: string;
+}
+
+export interface LBTarget {
+  id: string;
+  targetGroupId: string;
+  address: string;
+  weight?: number;
 }
 
 export interface LBBackend {
@@ -256,7 +313,10 @@ export interface LBBackend {
 
 export interface LBDetail {
   lb: LoadBalancer;
-  backends: LBBackend[];
+  listeners?: LBListener[];
+  targetGroups?: LBTargetGroup[];
+  targets?: LBTarget[];
+  backends?: LBBackend[];
 }
 
 // Firewalls
@@ -361,6 +421,136 @@ export interface Quota {
   resource: string;
   limit: number;
   used: number;
+}
+
+// VPC / Networking
+export type SubnetKind = "private" | "public" | "edge" | "lb" | "service" | "isolated" | "storage";
+
+export interface VPC {
+  id: string;
+  name: string;
+  slug?: string;
+  cidr?: string;
+  primaryIpv4Cidr?: string;
+  description?: string;
+  dnsDomain?: string;
+  status?: string;
+  enableFlowLogs?: boolean;
+  mainRouteTableId?: string;
+  createdAt?: string;
+}
+
+export interface Subnet {
+  id: string;
+  vpcId?: string;
+  name: string;
+  cidr: string;
+  kind?: SubnetKind;
+  subnetType?: SubnetKind;
+  zone?: string;
+  zoneId?: string;
+  availableIpCount?: number;
+  status?: string;
+}
+
+export interface RouteTable {
+  id: string;
+  vpcId?: string;
+  name: string;
+  isMain?: boolean;
+}
+
+export interface Route {
+  id: string;
+  routeTableId?: string;
+  destinationCidr?: string;
+  destination?: string;
+  targetType: string;
+  targetId: string;
+}
+
+export interface SecurityGroup {
+  id: string;
+  vpcId?: string;
+  name: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
+export interface SecurityGroupRule {
+  id: string;
+  securityGroupId?: string;
+  direction: "ingress" | "egress";
+  protocol: string;
+  fromPort?: number;
+  toPort?: number;
+  cidr?: string;
+  cidrIpv4?: string;
+  action?: string;
+}
+
+export interface NetworkACL {
+  id: string;
+  vpcId?: string;
+  name: string;
+  isDefault?: boolean;
+}
+
+export interface NetworkACLEntry {
+  ruleNumber: number;
+  direction: string;
+  action: string;
+  protocol: string;
+  cidr: string;
+  fromPort?: number;
+  toPort?: number;
+}
+
+export interface InternetGateway {
+  id: string;
+  vpcId?: string;
+  name: string;
+  status?: string;
+}
+
+export interface NATGateway {
+  id: string;
+  vpcId?: string;
+  subnetId: string;
+  name: string;
+  publicIp?: string;
+  status?: string;
+}
+
+export interface VPCDependencies {
+  vpcId: string;
+  subnets?: string[];
+  instances?: string[];
+  enis?: string[];
+  loadBalancers?: string[];
+  natGateways?: string[];
+  dnsZones?: string[];
+  blocked?: boolean;
+}
+
+export interface SubnetDependencies {
+  subnetId: string;
+  enis?: string[];
+  instances?: string[];
+  loadBalancers?: string[];
+  natGateways?: string[];
+  blocked?: boolean;
+}
+
+export interface VPCDetail {
+  vpc: VPC;
+  subnets: Subnet[];
+  routeTables: { routeTable: RouteTable; routes: Route[] }[];
+  securityGroups: { securityGroup: SecurityGroup; rules: SecurityGroupRule[] }[];
+  networkAcls: { networkAcl: NetworkACL; entries: NetworkACLEntry[] }[];
+  internetGateways: InternetGateway[];
+  natGateways: NATGateway[];
+  dependencies: VPCDependencies;
 }
 
 // Posture / Security

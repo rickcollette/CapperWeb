@@ -13,7 +13,8 @@ import {
 } from "recharts";
 import { useInstances, useEvents, useDaemonStatus } from "@/api/instances";
 import { useImages } from "@/api/images";
-import { useNetworks, useVolumes } from "@/api/resources";
+import { useVPCs } from "@/api/topology";
+import { useVolumes } from "@/api/resources";
 import { Card, EmptyState, PageHeader, StatusBadge } from "@/components/common/ui";
 
 const STATE_COLORS: Record<string, string> = {
@@ -30,7 +31,7 @@ export function Dashboard() {
   const { data: events } = useEvents(15);
   const { data: daemon } = useDaemonStatus();
   const { data: images } = useImages();
-  const { data: networks } = useNetworks();
+  const { data: vpcs } = useVPCs();
   const { data: volumes } = useVolumes();
 
   const counts = (instances ?? []).reduce(
@@ -71,8 +72,8 @@ export function Dashboard() {
           <div className="mt-1 text-3xl font-semibold">{images?.length ?? 0}</div>
         </Card>
         <Card>
-          <div className="text-sm text-muted">Networks</div>
-          <div className="mt-1 text-3xl font-semibold">{networks?.length ?? 0}</div>
+          <div className="text-sm text-muted">VPCs</div>
+          <div className="mt-1 text-3xl font-semibold">{vpcs?.length ?? 0}</div>
         </Card>
         <Card>
           <div className="text-sm text-muted">Daemon</div>
