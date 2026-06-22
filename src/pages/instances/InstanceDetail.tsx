@@ -12,6 +12,7 @@ import {
 import { useVolumes, useNetworks, useAttachNetwork, useDetachNetwork } from "@/api/resources";
 import { Button, Card, ConfirmDialog, PageHeader, StatusBadge } from "@/components/common/ui";
 import { InstanceTerminal } from "@/components/terminal/InstanceTerminal";
+import { InstanceEditForm } from "@/components/InstanceEditForm";
 
 const tabs = ["Overview", "Events", "Logs", "Metrics", "Networking", "Storage", "CapInit", "Security", "Console", "JSON"] as const;
 
@@ -172,6 +173,8 @@ export function InstanceDetail() {
           <div><span className="text-muted">Restart count</span><div>{inst.restartPolicy ?? "—"}</div></div>
         </Card>
       )}
+
+      {tab === "Metrics" && <InstanceEditForm instance={inst} />}
 
       {tab === "Storage" && (
         <Card>

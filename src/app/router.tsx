@@ -21,6 +21,7 @@ function named<T extends Record<string, unknown>>(
 // ── Page imports (each becomes its own async chunk) ────────────────────────
 
 const Dashboard        = lazy(named(() => import("@/pages/Dashboard"), "Dashboard"));
+const Account          = lazy(named(() => import("@/pages/Account"), "Account"));
 const InstanceList     = lazy(named(() => import("@/pages/instances/InstanceList"), "InstanceList"));
 const InstanceDetail   = lazy(named(() => import("@/pages/instances/InstanceDetail"), "InstanceDetail"));
 const CreateInstance   = lazy(named(() => import("@/pages/instances/CreateInstance"), "CreateInstance"));
@@ -34,6 +35,7 @@ const DNSZones         = lazy(named(() => import("@/pages/dns/DNSZones"), "DNSZo
 const ZoneDetail       = lazy(named(() => import("@/pages/dns/DNSZones"), "ZoneDetail"));
 const CapInitDashboard = lazy(named(() => import("@/pages/capinit/CapInitDashboard"), "CapInitDashboard"));
 const CapsuleRegistry  = lazy(named(() => import("@/pages/capsules/CapsuleRegistry"), "CapsuleRegistry"));
+const AccessRequests   = lazy(named(() => import("@/pages/iam/AccessRequests"), "AccessRequests"));
 const Users            = lazy(named(() => import("@/pages/iam/Users"), "Users"));
 const Groups           = lazy(named(() => import("@/pages/iam/Groups"), "Groups"));
 const Roles            = lazy(named(() => import("@/pages/iam/Roles"), "Roles"));
@@ -134,6 +136,8 @@ export const router = createBrowserRouter([
       { path: "dns",                       element: <DNSZones /> },
       { path: "dns/:zone",                 element: <ZoneDetail /> },
       { path: "capinit",                   element: <CapInitDashboard /> },
+      { path: "account",                   element: <Account /> },
+      { path: "iam/access",                element: <AccessRequests /> },
       { path: "iam/users",                 element: <Users /> },
       { path: "iam/groups",                element: <Groups /> },
       { path: "iam/roles",                 element: <Roles /> },
@@ -149,6 +153,7 @@ export const router = createBrowserRouter([
       { path: "stacks",                    element: <Stacks /> },
       { path: "stacks/:name",              element: <StackDetail /> },
       { path: "databases",                 element: <Databases /> },
+      { path: "databases/:engine",         element: <Databases /> },
       { path: "ai",                        element: <AIControlPlane /> },
       { path: "backups",                   element: <Backups /> },
       { path: "instance-types",            element: <InstanceTypes /> },
@@ -200,8 +205,8 @@ export const router = createBrowserRouter([
       { path: "certificates/:id",          element: <CertificateDetail /> },
 
       // VPC Mobility
-      { path: "vpcs/:vpcId/mobility",      element: gated("vpcs", <VPCMobility />) },
-      { path: "vpcs/:vpcId/mobility/jobs/:jobId", element: gated("vpcs", <VPCJobDetail />) },
+      { path: "vpcs/:vpcId/mobility",      element: gated("vpcMobility", <VPCMobility />) },
+      { path: "vpcs/:vpcId/mobility/jobs/:jobId", element: gated("vpcMobility", <VPCJobDetail />) },
 
       { path: "*",                         element: <Navigate to="/" replace /> },
     ],

@@ -8,8 +8,14 @@ export function setCsrfToken(token: string | null) {
   csrfToken = token;
 }
 
+function readCookie(name: string): string | null {
+  const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 export type ApiErrorKind =
   | "unauthorized" // 401 — not authenticated
+  | "pending" // 403 — SSO user awaiting admin approval (or disabled)
   | "tenant_scope" // 403 — not a member of the requested org/account/project
   | "account_suspended" // 403 — account is suspended
   | "csrf" // 403 — missing/invalid CSRF token
@@ -47,6 +53,7 @@ function classify(status: number, message: string): ApiErrorKind {
   if (status === 401) return "unauthorized";
   if (status === 404) return "not_found";
   if (status === 403) {
+    if (m.includes("pending approval") || m.includes("account disabled")) return "pending";
     if (m.includes("not authorized for account") ||
         m.includes("not authorized for org") ||
         m.includes("not authorized for project")) return "tenant_scope";
@@ -63,6 +70,10 @@ function clearTenantContext() {
   localStorage.removeItem("currentProjectID");
 }
 
+export function isPendingError(err: unknown): err is ApiError {
+  return err instanceof ApiError && err.kind === "pending";
+}
+
 export function isTenantScopeError(err: unknown): err is ApiError {
   return err instanceof ApiError && err.kind === "tenant_scope";
 }
@@ -72,8 +83,11 @@ function buildHeaders(options: RequestInit): HeadersInit {
     ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers as Record<string, string> ?? {}),
   };
-  if (csrfToken) {
-    headers["X-CSRF-Token"] = csrfToken;
+  // CSRF token: prefer the in-memory value (set at login), else read the
+  // capper_csrf cookie so it survives reloads and the Google redirect.
+  const csrf = csrfToken ?? readCookie("capper_csrf");
+  if (csrf) {
+    headers["X-CSRF-Token"] = csrf;
   }
   const accountID = localStorage.getItem("currentAccountID");
   if (accountID) headers["X-Capper-Account-ID"] = accountID;

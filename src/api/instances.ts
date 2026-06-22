@@ -20,6 +20,29 @@ export function useInstance(id: string) {
   });
 }
 
+export interface InstancePatch {
+  resources?: {
+    memoryBytes?: number;
+    cpuTimeSecs?: number;
+    maxProcesses?: number;
+    fileSizeBytes?: number;
+  };
+  restartPolicy?: string;
+  labels?: Record<string, string>;
+}
+
+export function useUpdateInstance(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: InstancePatch) =>
+      apiFetch(`/instances/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["instances", id] });
+      qc.invalidateQueries({ queryKey: ["instances"] });
+    },
+  });
+}
+
 export function useInstanceActions(id: string) {
   const qc = useQueryClient();
   const invalidate = () => {

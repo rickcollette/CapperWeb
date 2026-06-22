@@ -1,15 +1,17 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { useCreateInstance } from "@/api/instances";
 import { useImages } from "@/api/images";
 import { useCapsuleTypes, useCapInitTemplates, useNetworks, useVolumes } from "@/api/resources";
 import { Button, Card, PageHeader } from "@/components/common/ui";
 import { useLaunchWizard, WIZARD_STEPS } from "@/stores/launchWizard";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes, imageDisplayName } from "@/lib/utils";
+import { features } from "@/lib/features";
 
 export function CreateInstance() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { data: images } = useImages();
   const { data: types } = useCapsuleTypes();
   const { data: networks } = useNetworks();
@@ -19,6 +21,33 @@ export function CreateInstance() {
   const wizard = useLaunchWizard();
   const [envKey, setEnvKey] = useState("");
   const [envVal, setEnvVal] = useState("");
+
+  const sortedTypes = useMemo(() => {
+    if (!types?.length) return [];
+    return [...types].sort((a, b) => {
+      if (a.family === "standard" && b.family !== "standard") return -1;
+      if (b.family === "standard" && a.family !== "standard") return 1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [types]);
+
+  useEffect(() => {
+    if (!images?.length) return;
+    const typeParam = searchParams.get("type");
+    const state = useLaunchWizard.getState();
+    const patch: { instanceType?: string; image?: string } = {};
+    if (!state.instanceType) {
+      if (typeParam) patch.instanceType = typeParam;
+      else if (features.isAIO) patch.instanceType = "cap-micro";
+    }
+    if (!state.image && features.isAIO) {
+      const preferred = images.find((i) => i.name === "alpine" || i.name === "alpine.cap")
+        ?? images.find((i) => i.name === "alma" || i.name === "alma.cap")
+        ?? images[0];
+      if (preferred) patch.image = preferred.name;
+    }
+    if (Object.keys(patch).length) useLaunchWizard.getState().update(patch);
+  }, [searchParams, images]);
 
   const submit = () => {
     create.mutate(
@@ -71,7 +100,7 @@ export function CreateInstance() {
             >
               <option value="">Select image...</option>
               {images?.map((img) => (
-                <option key={img.id} value={img.name}>{img.name}</option>
+                <option key={img.id} value={img.name}>{imageDisplayName(img.name)}</option>
               ))}
             </select>
           </label>
@@ -87,9 +116,10 @@ export function CreateInstance() {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2"
               >
                 <option value="">Default (from image)</option>
-                {types?.map((t) => (
+                {sortedTypes.map((t) => (
                   <option key={t.id} value={t.name}>
                     {t.name} — {t.cpuCount} CPU, {formatBytes(t.memoryBytes)}
+                    {t.diskBytes ? `, ${formatBytes(t.diskBytes)} disk` : ""}
                   </option>
                 ))}
               </select>
@@ -211,7 +241,7 @@ export function CreateInstance() {
         {wizard.step === 5 && (
           <div className="space-y-4">
             <dl className="grid gap-2 text-sm">
-              <div><dt className="text-muted">Image</dt><dd className="font-mono">{wizard.image}</dd></div>
+              <div><dt className="text-muted">Image</dt><dd className="font-mono">{imageDisplayName(wizard.image)}</dd></div>
               <div><dt className="text-muted">Type</dt><dd>{wizard.instanceType || "default"}</dd></div>
               <div><dt className="text-muted">Network</dt><dd>{wizard.network || "none"}</dd></div>
               <div><dt className="text-muted">Volumes</dt><dd>{wizard.volumes.length || "none"}</dd></div>
