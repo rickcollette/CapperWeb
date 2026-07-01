@@ -62,6 +62,28 @@ export function useInstanceActions(id: string) {
       mutationFn: () => apiFetch(`/instances/${id}/restart`, { method: "POST" }),
       onSuccess: invalidate,
     }),
+    reboot: useMutation({
+      mutationFn: () => apiFetch(`/instances/${id}/reboot`, { method: "POST" }),
+      onSuccess: invalidate,
+    }),
+    protectTermination: useMutation({
+      mutationFn: () => apiFetch(`/instances/${id}/protect-termination`, { method: "POST" }),
+      onSuccess: invalidate,
+    }),
+    unprotectTermination: useMutation({
+      mutationFn: () => apiFetch(`/instances/${id}/protect-termination`, { method: "DELETE" }),
+      onSuccess: invalidate,
+    }),
+    attachNetworkInterface: useMutation({
+      mutationFn: (body: { eniId: string; deviceIndex: number }) =>
+        apiFetch(`/instances/${id}/attach-network-interface`, { method: "POST", body: JSON.stringify(body) }),
+      onSuccess: invalidate,
+    }),
+    detachNetworkInterface: useMutation({
+      mutationFn: () =>
+        apiFetch(`/instances/${id}/detach-network-interface`, { method: "POST" }),
+      onSuccess: invalidate,
+    }),
     remove: useMutation({
       mutationFn: () => apiFetch(`/instances/${id}`, { method: "DELETE" }),
       onSuccess: invalidate,

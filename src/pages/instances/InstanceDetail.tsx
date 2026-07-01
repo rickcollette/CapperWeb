@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
+const Link = RouterLink;
 import { useQueryClient } from "@tanstack/react-query";
 import Editor from "@monaco-editor/react";
 import {
@@ -84,6 +85,9 @@ export function InstanceDetail() {
             <Button disabled={!caps?.canRestart} onClick={() => actions.restart.mutate()}>
               Restart
             </Button>
+            <Button disabled={!caps?.canRestart} onClick={() => actions.reboot.mutate()}>
+              Reboot
+            </Button>
             <Button
               variant="danger"
               disabled={!caps?.canDelete}
@@ -139,16 +143,47 @@ export function InstanceDetail() {
       </div>
 
       {tab === "Overview" && (
-        <Card className="grid gap-4 md:grid-cols-2">
-          <div><span className="text-muted">State</span><div><StatusBadge status={inst.status} /></div></div>
-          <div><span className="text-muted">PID</span><div>{inst.pid || "—"}</div></div>
-          <div><span className="text-muted">Image</span><div className="font-mono text-sm">{inst.image}</div></div>
-          <div><span className="text-muted">Digest</span><div className="truncate font-mono text-xs">{inst.imageDigest}</div></div>
-          <div><span className="text-muted">Capsule type</span><div>{inst.capsuleType ?? "default"}</div></div>
-          <div><span className="text-muted">Network IP</span><div>{inst.networkIp ?? "none"}</div></div>
-          <div><span className="text-muted">Started</span><div>{inst.startedAt ?? "—"}</div></div>
-          <div><span className="text-muted">Runtime</span><div>{inst.runtimeMode ?? "—"}</div></div>
-        </Card>
+        <>
+          <Card className="grid gap-4 md:grid-cols-2">
+            <div><span className="text-muted">State</span><div><StatusBadge status={inst.status} /></div></div>
+            <div><span className="text-muted">PID</span><div>{inst.pid || "—"}</div></div>
+            <div><span className="text-muted">Image</span><div className="font-mono text-sm">{inst.image}</div></div>
+            <div><span className="text-muted">Digest</span><div className="truncate font-mono text-xs">{inst.imageDigest}</div></div>
+            <div><span className="text-muted">Capsule type</span><div>{inst.capsuleType ?? "default"}</div></div>
+            <div><span className="text-muted">Network IP</span><div>{inst.networkIp ?? "none"}</div></div>
+            <div><span className="text-muted">Started</span><div>{inst.startedAt ?? "—"}</div></div>
+            <div><span className="text-muted">Runtime</span><div>{inst.runtimeMode ?? "—"}</div></div>
+          </Card>
+
+          <Card>
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-slate-200">Safety</h3>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted">Termination Protection</span>
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs ${inst.terminationProtection ? "text-green-400" : "text-slate-400"}`}>
+                    {inst.terminationProtection ? "Protected" : "Unprotected"}
+                  </span>
+                  <button
+                    onClick={() => {
+                      if (inst.terminationProtection) {
+                        actions.unprotectTermination.mutate();
+                      } else {
+                        actions.protectTermination.mutate();
+                      }
+                    }}
+                    disabled={actions.protectTermination.isPending || actions.unprotectTermination.isPending}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      inst.terminationProtection ? "bg-green-600" : "bg-slate-700"
+                    } ${actions.protectTermination.isPending || actions.unprotectTermination.isPending ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${inst.terminationProtection ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </>
       )}
 
       {tab === "Events" && (
@@ -236,6 +271,18 @@ export function InstanceDetail() {
             <div><span className="text-muted">Public IP</span><div>{inst.publicIpAddress ?? "—"}</div></div>
             <div><span className="text-muted">Security groups</span><div className="font-mono text-xs">{(inst.securityGroupIds ?? []).join(", ") || "—"}</div></div>
             <div><span className="text-muted">Hostname</span><div>{inst.hostname ?? "—"}</div></div>
+          </Card>
+
+          <Card>
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Network Interface Attachments</h3>
+              <p className="text-xs text-muted">
+                Manage additional network interfaces for this instance through the ENI management page.
+              </p>
+              <Link to="/networks/enis" className="text-primary hover:underline text-sm">
+                Go to ENI Management →
+              </Link>
+            </div>
           </Card>
         </div>
       )}
