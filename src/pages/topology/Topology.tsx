@@ -6,7 +6,8 @@ import { Cpu, Globe, MapPin, Server } from "lucide-react";
 type Tab = "realms" | "regions" | "zones" | "nodes";
 
 function RealmsTab() {
-  const { data: realms = [], isLoading } = useRealms();
+  const { data, isLoading } = useRealms();
+  const realms = Array.isArray(data) ? data : [];
   if (isLoading) return <p className="text-sm text-muted">Loading…</p>;
   if (!realms.length) return <EmptyState title="No Realms" description="No realms registered." />;
   return (
@@ -25,7 +26,8 @@ function RealmsTab() {
 }
 
 function RegionsTab() {
-  const { data: regions = [], isLoading } = useRegions();
+  const { data, isLoading } = useRegions();
+  const regions = Array.isArray(data) ? data : [];
   if (isLoading) return <p className="text-sm text-muted">Loading…</p>;
   if (!regions.length) return <EmptyState title="No Regions" description="No regions registered." />;
   return (
@@ -35,7 +37,7 @@ function RegionsTab() {
           <MapPin className="mt-0.5 h-4 w-4 text-primary shrink-0" />
           <div>
             <p className="font-medium">{r.name || r.slug}</p>
-            <p className="text-xs text-muted">{r.realm || r.id}</p>
+            <p className="text-xs text-muted">{r.realm || r.realmId || r.id}</p>
           </div>
         </Card>
       ))}
@@ -44,7 +46,8 @@ function RegionsTab() {
 }
 
 function ZonesTab() {
-  const { data: zones = [], isLoading } = useZones();
+  const { data, isLoading } = useZones();
+  const zones = Array.isArray(data) ? data : [];
   if (isLoading) return <p className="text-sm text-muted">Loading…</p>;
   if (!zones.length) return <EmptyState title="No Zones" description="No zones registered." />;
   return (
@@ -61,7 +64,7 @@ function ZonesTab() {
           {zones.map((z: any) => (
             <tr key={z.id || z.slug} className="hover:bg-slate-800/30">
               <td className="px-4 py-2.5 font-medium">{z.name || z.slug}</td>
-              <td className="px-4 py-2.5 text-muted text-xs">{z.region || "—"}</td>
+              <td className="px-4 py-2.5 text-muted text-xs">{z.region || z.regionId || "—"}</td>
               <td className="px-4 py-2.5"><StatusBadge status={z.status || "active"} /></td>
             </tr>
           ))}
@@ -72,7 +75,8 @@ function ZonesTab() {
 }
 
 function NodesTab() {
-  const { data: nodes = [], isLoading } = useNodes();
+  const { data, isLoading } = useNodes();
+  const nodes = Array.isArray(data) ? data : [];
   const cordon = useCordonNode();
   const uncordon = useUncordonNode();
   const drain = useDrainNode();
@@ -99,7 +103,7 @@ function NodesTab() {
                   <span className="font-medium">{n.name || n.id}</span>
                 </div>
               </td>
-              <td className="px-4 py-2.5 text-xs text-muted">{n.zone || "—"}</td>
+              <td className="px-4 py-2.5 text-xs text-muted">{n.zone || n.zoneId || "—"}</td>
               <td className="px-4 py-2.5"><StatusBadge status={n.status || "unknown"} /></td>
               <td className="px-4 py-2.5 text-xs">{n.cordoned ? "Yes" : "No"}</td>
               <td className="px-4 py-2.5">
