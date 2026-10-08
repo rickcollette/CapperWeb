@@ -27,7 +27,7 @@ const transitionalStatuses = new Set([
   "detaching", "configuring", "initializing",
 ]);
 
-export function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status, text }: { status: string; text?: string }) {
   const key = (status ?? "").toLowerCase();
   const transitional = transitionalStatuses.has(key);
   return (
@@ -38,7 +38,7 @@ export function StatusBadge({ status }: { status: string }) {
       )}
     >
       {transitional && <Loader2 className="h-3 w-3 animate-spin" />}
-      {status}
+      {text ?? status}
     </span>
   );
 }
@@ -85,9 +85,13 @@ export function PageHeader({ title, description, actions }: {
   );
 }
 
-export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
+export function Card({
+  children,
+  className,
+  ...rest
+}: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) {
   return (
-    <div className={cn("rounded-xl border border-border bg-card p-4", className)}>
+    <div className={cn("rounded-xl border border-border bg-card p-4", className)} {...rest}>
       {children}
     </div>
   );
@@ -101,6 +105,7 @@ export function Button({
   onClick,
   type = "button",
   title,
+  className,
 }: {
   children: React.ReactNode;
   variant?: "default" | "primary" | "danger" | "ghost";
@@ -109,6 +114,7 @@ export function Button({
   onClick?: () => void;
   type?: "button" | "submit";
   title?: string;
+  className?: string;
 }) {
   const variants = {
     default: "border-border bg-card hover:bg-slate-800",
@@ -127,10 +133,52 @@ export function Button({
         "inline-flex items-center gap-2 rounded-lg border font-medium transition disabled:opacity-40",
         variants[variant],
         sizes[size],
+        className,
       )}
     >
       {children}
     </button>
+  );
+}
+
+export function TextInput({
+  label,
+  className,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & { label?: string }) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      {label ? <span className="text-muted">{label}</span> : null}
+      <input
+        {...props}
+        className={cn(
+          "rounded-lg border border-border bg-slate-950/60 px-3 py-2 text-sm outline-none focus:border-primary/50",
+          className,
+        )}
+      />
+    </label>
+  );
+}
+
+export function Select({
+  label,
+  className,
+  children,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; children?: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      {label ? <span className="text-muted">{label}</span> : null}
+      <select
+        {...props}
+        className={cn(
+          "rounded-lg border border-border bg-slate-950/60 px-3 py-2 text-sm outline-none focus:border-primary/50",
+          className,
+        )}
+      >
+        {children}
+      </select>
+    </label>
   );
 }
 
