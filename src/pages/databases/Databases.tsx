@@ -5,6 +5,7 @@ import { DeleteResourceModal } from "@/components/DeleteResourceModal";
 import { DeletionProgressModal } from "@/components/DeletionProgressModal";
 import { useDeletionFlow } from "@/hooks/useDeletionFlow";
 import type { DBEngine } from "@/types/capper";
+import { SubnetPicker } from "@/components/common/SubnetPicker";
 import {
   Button,
   Card,
@@ -45,8 +46,10 @@ export function Databases() {
   const { data, isLoading, refetch } = useDatabases();
   const create = useCreateDatabase();
   const del = useDeleteDatabase();
-  const [form, setForm] = useState<{ name: string; engine: DBEngine; version: string }>({
+  const [form, setForm] = useState<{ name: string; engine: DBEngine; version: string; vpcId: string; subnetId: string }>({
     name: "",
+    vpcId: "",
+    subnetId: "",
     engine: scoped ?? "postgres",
     version: ENGINE_DEFAULT_VERSION[scoped ?? "postgres"],
   });
@@ -60,9 +63,19 @@ export function Databases() {
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.subnetId) return;
     create.mutate(
-      { name: form.name, engine: formEngine, version: form.version },
-      { onSuccess: () => setForm({ name: "", engine: formEngine, version: ENGINE_DEFAULT_VERSION[formEngine] }) },
+      {
+        name: form.name,
+        engine: formEngine,
+        version: form.version,
+        subnetId: form.subnetId,
+        vpcId: form.vpcId || undefined,
+      },
+      {
+        onSuccess: () =>
+          setForm({ ...form, name: "", engine: formEngine, version: ENGINE_DEFAULT_VERSION[formEngine] }),
+      },
     );
   }
 
@@ -75,7 +88,7 @@ export function Databases() {
     <div>
       <PageHeader title={title} description={desc} />
 
-      <Card className="mb-6 max-w-xl">
+      <Card className="mb-6 max-w-2xl">
         <p className="mb-3 text-sm font-medium">Create {scoped ? ENGINE_LABELS[scoped] : "Database"}</p>
         <form className="flex flex-wrap items-end gap-2" onSubmit={handleCreate}>
           <input
@@ -105,7 +118,16 @@ export function Databases() {
             value={form.version}
             onChange={(e) => setForm({ ...form, version: e.target.value })}
           />
-          <Button type="submit" variant="primary" disabled={create.isPending}>Create</Button>
+          <div className="w-full">
+            <SubnetPicker
+              vpcId={form.vpcId}
+              subnetId={form.subnetId}
+              purpose="launch"
+              required
+              onChange={(next) => setForm({ ...form, ...next })}
+            />
+          </div>
+          <Button type="submit" variant="primary" disabled={create.isPending || !form.subnetId}>Create</Button>
         </form>
         {create.isError && <p className="mt-2 text-xs text-red-400">{String(create.error)}</p>}
       </Card>

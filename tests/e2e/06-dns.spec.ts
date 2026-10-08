@@ -34,6 +34,9 @@ test.describe("DNS Zones", () => {
 
   test("create a zone and verify it appears", async ({ page }) => {
     await page.getByPlaceholder(/zone|name/i).first().fill(ZONE_NAME);
+    // Private zones require a VPC subnet; pick the first available one.
+    const subnetSelect = page.locator("select").filter({ hasText: "Select subnet" }).first();
+    await subnetSelect.selectOption({ index: 1 });
     await page.getByRole("button", { name: /create/i }).first().click();
     await expect(page.getByText(ZONE_NAME, { exact: false })).toBeVisible({ timeout: 10000 });
   });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useCSDVolumes, useCreateCSDVolume, useDeleteCSDVolume } from "@/api/csdstorage";
 import { PageHeader, Button, Card, StatusBadge } from "@/components/common/ui";
+import { StoragePoolWarning } from "@/components/common/StoragePoolWarning";
 
 export function CSDStorage() {
   const { data: volumes, isLoading } = useCSDVolumes();
@@ -57,6 +58,7 @@ export function CSDStorage() {
           </Button>
         }
       />
+      <StoragePoolWarning what="creating CSD volumes" />
 
       {showCreateForm && (
         <Card className="mb-4 p-4 space-y-4">

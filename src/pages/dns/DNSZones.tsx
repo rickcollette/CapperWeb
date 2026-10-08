@@ -2,19 +2,35 @@ import { Link, useParams } from "react-router-dom";
 import { useState } from "react";
 import { useDNSZones, useDNSZone, useDNSQuery, useCreateDNSZone, useCreateDNSRecord } from "@/api/resources";
 import { Button, Card, EmptyState, PageHeader } from "@/components/common/ui";
+import { SubnetPicker } from "@/components/common/SubnetPicker";
 
 export function DNSZones() {
   const { data, isLoading } = useDNSZones();
   const create = useCreateDNSZone();
   const [name, setName] = useState("");
+  const [placement, setPlacement] = useState({ vpcId: "", subnetId: "" });
 
   return (
     <div>
-      <PageHeader title="DNS Zones" description="Internal DNS for Capper networks." />
-      <Card className="mb-6 max-w-md">
-        <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); create.mutate({ name }, { onSuccess: () => setName("") }); }}>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="zone.name." className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" required />
-          <Button type="submit" variant="primary" disabled={create.isPending}>Create zone</Button>
+      <PageHeader title="DNS Zones" description="Internal DNS for VPC subnets. Private zones are attached to a subnet." />
+      <Card className="mb-6 max-w-xl">
+        <form
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!placement.subnetId) return;
+            create.mutate(
+              { name, type: "private", networkId: placement.subnetId },
+              { onSuccess: () => setName("") },
+            );
+          }}
+        >
+          <div className="flex gap-2">
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="zone.name." className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm" required />
+            <Button type="submit" variant="primary" disabled={create.isPending || !placement.subnetId}>Create zone</Button>
+          </div>
+          <SubnetPicker vpcId={placement.vpcId} subnetId={placement.subnetId} onChange={setPlacement} required />
+          {create.isError && <p className="text-xs text-red-400">{String(create.error)}</p>}
         </form>
       </Card>
       {isLoading && <p className="text-muted">Loading...</p>}
@@ -22,12 +38,13 @@ export function DNSZones() {
       {!!data?.length && (
         <div className="overflow-hidden rounded-xl border border-border">
           <table className="w-full text-sm">
-            <thead><tr className="border-b border-border bg-card text-left text-muted"><th className="p-3">Zone</th><th className="p-3">Type</th><th className="p-3">TTL</th></tr></thead>
+            <thead><tr className="border-b border-border bg-card text-left text-muted"><th className="p-3">Zone</th><th className="p-3">Type</th><th className="p-3">Subnet</th><th className="p-3">TTL</th></tr></thead>
             <tbody>
               {data.map((z) => (
                 <tr key={z.id} className="border-b border-border/60">
                   <td className="p-3"><Link to={`/dns/${z.name}`} className="text-primary hover:underline">{z.name}</Link></td>
                   <td className="p-3">{z.type}</td>
+                  <td className="p-3 font-mono text-xs text-muted">{z.networkId || "—"}</td>
                   <td className="p-3">{z.defaultTtl}</td>
                 </tr>
               ))}

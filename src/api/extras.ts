@@ -218,7 +218,8 @@ export function useFirewalls() {
 export function useCreateFirewall() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; network: string }) =>
+    // `network` must be a VPC subnet ID when set (flat networks are removed).
+    mutationFn: (body: { name: string; network?: string }) =>
       apiFetch("/firewalls", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["firewalls"] }),
   });
@@ -313,7 +314,7 @@ export function useDatabases() {
 export function useCreateDatabase() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; engine: DBEngine; version?: string }) =>
+    mutationFn: (body: { name: string; engine: DBEngine; version?: string; subnetId: string; vpcId?: string }) =>
       apiFetch("/databases", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["databases"] }),
   });

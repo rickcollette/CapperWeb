@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useCreateNetworkInterface } from "@/api/eni";
-import { useVPCs } from "@/api/topology";
 import { Button, TextInput } from "@/components/common/ui";
+import { SubnetPicker } from "@/components/common/SubnetPicker";
 import type { CreateENIRequest } from "@/api/eni";
 
 interface CreateENIDialogProps {
@@ -15,7 +15,6 @@ export function CreateENIDialog({ open, onClose }: CreateENIDialogProps) {
     subnetId: "",
     description: "",
   });
-  const { data: vpcs } = useVPCs();
   const createMutation = useCreateNetworkInterface();
 
   const handleSubmit = async () => {
@@ -40,27 +39,11 @@ export function CreateENIDialog({ open, onClose }: CreateENIDialogProps) {
         <h2 className="text-lg font-semibold mb-4">Create Network Interface</h2>
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm text-muted mb-1">VPC</label>
-            <select
-              value={form.vpcId}
-              onChange={(e) => setForm({ ...form, vpcId: e.target.value })}
-              className="w-full rounded-lg border border-border bg-slate-800 px-3 py-2 text-sm"
-            >
-              <option value="">Select VPC</option>
-              {(vpcs || []).map((vpc) => (
-                <option key={vpc.id} value={vpc.id}>
-                  {vpc.name} ({vpc.id})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <TextInput
-            label="Subnet ID"
-            placeholder="subnet-xxxxxx"
-            value={form.subnetId}
-            onChange={(e) => setForm({ ...form, subnetId: e.target.value })}
+          <SubnetPicker
+            className="space-y-4"
+            vpcId={form.vpcId}
+            subnetId={form.subnetId}
+            onChange={(next) => setForm({ ...form, ...next })}
           />
 
           <TextInput

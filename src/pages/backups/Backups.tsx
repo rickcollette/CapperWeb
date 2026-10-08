@@ -15,6 +15,7 @@ import {
   PageHeader,
 } from "@/components/common/ui";
 import { cn } from "@/lib/utils";
+import { StoragePoolWarning } from "@/components/common/StoragePoolWarning";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -259,6 +260,7 @@ export function Backups() {
         title="Backups"
         description="Manage on-demand backups and automatic backup policies."
       />
+      <StoragePoolWarning what="creating local backups or backup policies" />
 
       <div className="mb-6 flex gap-1 border-b border-border">
         {TABS.map((t) => (

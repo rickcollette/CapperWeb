@@ -4,6 +4,7 @@ import { Upload, Trash2 } from "lucide-react";
 import { useImages, useUploadImage, useDeleteImage } from "@/api/images";
 import { Button, ConfirmDialog, EmptyState, PageHeader } from "@/components/common/ui";
 import { formatBytes, imageDisplayName } from "@/lib/utils";
+import { StoragePoolWarning } from "@/components/common/StoragePoolWarning";
 
 export function ImageList() {
   const { data, isLoading } = useImages();
@@ -35,6 +36,7 @@ export function ImageList() {
           </>
         }
       />
+      <StoragePoolWarning what="importing or uploading images" />
       {isLoading && <p className="text-muted">Loading images...</p>}
       {!isLoading && !data?.length && <EmptyState title="No images" description="Import or upload a .cap image." />}
       {!!data?.length && (

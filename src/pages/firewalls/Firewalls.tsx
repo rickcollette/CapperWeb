@@ -16,6 +16,7 @@ import {
 } from "@/components/common/ui";
 import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
 import type { Firewall } from "@/types/capper";
+import { SubnetPicker } from "@/components/common/SubnetPicker";
 
 const PROTOCOLS = ["tcp", "udp", "icmp", "any"];
 
@@ -178,21 +179,24 @@ function FirewallRow({ fw }: { fw: Firewall }) {
 export function Firewalls() {
   const { data, isLoading } = useFirewalls();
   const create = useCreateFirewall();
-  const [form, setForm] = useState({ name: "", network: "" });
+  const [form, setForm] = useState({ name: "", vpcId: "", network: "" });
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    create.mutate(form, { onSuccess: () => setForm({ name: "", network: "" }) });
+    create.mutate(
+      { name: form.name, network: form.network || undefined },
+      { onSuccess: () => setForm({ name: "", vpcId: "", network: "" }) },
+    );
   }
 
   return (
     <div>
       <PageHeader
         title="Firewalls"
-        description="Network-level firewall rules for your capsule environments."
+        description="Subnet-level firewall rules for your capsule environments."
       />
 
-      <Card className="mb-6 max-w-lg">
+      <Card className="mb-6 max-w-xl">
         <p className="mb-3 text-sm font-medium">Create Firewall</p>
         <form className="flex flex-wrap gap-2" onSubmit={handleCreate}>
           <input
@@ -202,12 +206,14 @@ export function Firewalls() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             required
           />
-          <input
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            placeholder="Network"
-            value={form.network}
-            onChange={(e) => setForm({ ...form, network: e.target.value })}
-          />
+          <div className="w-full">
+            <SubnetPicker
+              vpcId={form.vpcId}
+              subnetId={form.network}
+              onChange={(next) => setForm({ ...form, vpcId: next.vpcId, network: next.subnetId })}
+            />
+            <p className="mt-1 text-xs text-muted">Optional: attach the firewall to a VPC subnet.</p>
+          </div>
           <Button type="submit" variant="primary" disabled={create.isPending}>
             Create Firewall
           </Button>
@@ -224,7 +230,7 @@ export function Firewalls() {
             <thead>
               <tr className="border-b border-border bg-card text-left text-muted">
                 <th className="p-3">Name</th>
-                <th className="p-3">Network</th>
+                <th className="p-3">Subnet</th>
                 <th className="p-3">Rules</th>
                 <th className="p-3">Status</th>
                 <th className="p-3" />

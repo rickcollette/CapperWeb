@@ -1,8 +1,8 @@
 # Capper WebUI Design
 
-Capper WebUI is designed as a real control plane, not just a pretty wrapper around CLI commands. The frontend feels like a lightweight private AWS console for capsules: instances, images, networks, storage, IAM, marketplace, factory sync, and capinit/metadata.
+Capper WebUI is designed as a real control plane, not just a pretty wrapper around CLI commands. The frontend feels like a lightweight private AWS console for capsules: instances, images, VPCs and subnets, storage, IAM, marketplace, factory sync, and capinit/metadata.
 
-Capper already provides the right backend concepts: a `Controller` exposing image and instance managers with IAM authorization, a daemon control plane, runtime support for bwrap/chroot/crun/runc/lxc/qemu, S3-compatible object storage, buckets, objects, volumes, networks, DNS, and IAM primitives. The UI sits on top of those instead of duplicating logic in the browser.
+Capper already provides the right backend concepts: a `Controller` exposing image and instance managers with IAM authorization, a daemon control plane, runtime support for bwrap/chroot/crun/runc/lxc/qemu, S3-compatible object storage, buckets, objects, volumes, VPC networking, DNS, and IAM primitives. The UI sits on top of those instead of duplicating logic in the browser.
 
 ## Recommended Stack
 
@@ -48,7 +48,7 @@ webui/
       client.ts
       instances.ts
       images.ts
-      networks.ts
+      topology.ts      # VPCs and subnets
       storage.ts
       iam.ts
       marketplace.ts
@@ -94,10 +94,10 @@ webui/
         FactoryDashboard.tsx
         FactoryJobs.tsx
         FactoryImageSync.tsx
-      networks/
-        NetworkList.tsx
-        NetworkDetail.tsx
-        CreateNetwork.tsx
+      vpcs/
+        VPCs.tsx
+        VPCDetail.tsx
+        CreateVPC.tsx
       storage/
         StorageDashboard.tsx
         BucketList.tsx
@@ -156,7 +156,7 @@ Images
 Capsule Registry
 Marketplace
 Factory
-Networks
+VPCs
 Storage
 DNS
 CapInit
@@ -199,7 +199,7 @@ Cards:
 Running Instances
 Stopped Instances
 Images Available
-Networks
+VPCs
 Buckets
 Volumes
 Marketplace Pending Review
@@ -416,10 +416,10 @@ The UI should **not** let the user hand-wave resources. Pick a capsule type, the
 ## Step 3: Network
 
 ```txt
-No network
-Private network
-NAT network
-Attach to existing network
+VPC
+Subnet (required)
+Security groups
+Public IP behavior
 Expose service port
 Register DNS name
 ```
@@ -909,65 +909,45 @@ Snapshot
 Delete
 ```
 
-# Network UI
+# VPC and Subnet UI
 
-## Network List
+Flat virtual networks have been removed. All
+network placement uses VPCs and subnets. Every instance, load balancer, managed
+database, private DNS zone, NAT gateway, and ENI is placed in a VPC subnet; the UI
+uses the shared `SubnetPicker` (VPC dropdown + subnet dropdown) wherever placement
+is required.
+
+## VPC List
 
 Columns:
 
 ```txt
 Name
 CIDR
-Bridge
-Gateway
-NAT
-Instances
-DNS Zone
+Subnets
 Status
 Actions
 ```
 
-## Network Detail
+## VPC Detail
 
 Tabs:
 
 ```txt
 Overview
-Instances
-Routes
-Firewall
+Subnets
+Route Tables
+Security Groups
+Network ACLs
+Network Interfaces
+NAT Gateways
 DNS
 Events
-Advanced
-```
-
-Visual diagram:
-
-```txt
-Network: app-net
-CIDR: 10.42.0.0/24
-
-[Instance web-01] 10.42.0.10
-[Instance api-01] 10.42.0.11
-[Instance db-01]  10.42.0.12
-        |
-     capper0 bridge
-        |
-      NAT / Host
-```
-
-Advanced should show:
-
-```txt
-Bridge name
-iptables masquerade status
-veth pairs
-namespace names
 ```
 
 # DNS UI
 
-Capper has DNS command support for zones, records, service discovery, queries, and an embedded DNS daemon. The WebUI should expose that as internal DNS management for Capper networks. 
+Capper has DNS command support for zones, records, service discovery, queries, and an embedded DNS daemon. The WebUI should expose that as internal DNS management for VPC subnets (private zones are attached to a subnet). 
 
 Screens:
 
@@ -1231,16 +1211,21 @@ POST   /api/v1/storage/volumes/:name/detach
 DELETE /api/v1/storage/volumes/:name
 ```
 
-## Networks
+## VPCs and subnets
 
 ```txt
-GET    /api/v1/networks
-POST   /api/v1/networks
-GET    /api/v1/networks/:name
-DELETE /api/v1/networks/:name
-POST   /api/v1/networks/:name/attach/:instance
-POST   /api/v1/networks/:name/detach/:instance
+GET    /api/v1/vpcs
+POST   /api/v1/vpcs
+GET    /api/v1/vpcs/:vpc
+DELETE /api/v1/vpcs/:vpc
+GET    /api/v1/vpcs/:vpc/subnets
+POST   /api/v1/vpcs/:vpc/subnets
+DELETE /api/v1/subnets/:subnetId
 ```
+
+The legacy flat-network endpoints were removed. `subnetId` is required when creating
+instances, load balancers, managed databases, NAT gateways, and ENIs; DNS
+`networkId` and firewall `network` mean a VPC subnet ID.
 
 ## DNS
 
@@ -1371,7 +1356,7 @@ import { CreateInstance } from "@/pages/instances/CreateInstance";
 import { ImageList } from "@/pages/images/ImageList";
 import { Marketplace } from "@/pages/marketplace/Marketplace";
 import { FactoryDashboard } from "@/pages/factory/FactoryDashboard";
-import { NetworkList } from "@/pages/networks/NetworkList";
+import { VPCs } from "@/pages/vpcs/VPCs";
 import { StorageDashboard } from "@/pages/storage/StorageDashboard";
 import { CapInitDashboard } from "@/pages/capinit/CapInitDashboard";
 import { Users } from "@/pages/iam/Users";
@@ -1389,7 +1374,7 @@ export const router = createBrowserRouter([
       { path: "images", element: <ImageList /> },
       { path: "marketplace", element: <Marketplace /> },
       { path: "factory", element: <FactoryDashboard /> },
-      { path: "networks", element: <NetworkList /> },
+      { path: "vpcs", element: <VPCs /> },
       { path: "storage", element: <StorageDashboard /> },
       { path: "capinit", element: <CapInitDashboard /> },
       { path: "iam/users", element: <Users /> },
@@ -1607,7 +1592,7 @@ Daemon health
 Buckets
 Object browser
 Volumes
-Networks
+VPCs and subnets
 DNS query tester
 ```
 

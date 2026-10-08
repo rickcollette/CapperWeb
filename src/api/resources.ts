@@ -63,7 +63,8 @@ export function useDNSZones() {
 export function useCreateDNSZone() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { name: string; type?: string }) =>
+    // networkId is a VPC subnet ID; required for private zones (the default type).
+    mutationFn: (body: { name: string; type?: string; networkId?: string }) =>
       apiFetch("/dns/zones", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dns-zones"] }),
   });
