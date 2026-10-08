@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { apiFetch, apiFetchWithCaps, API_BASE } from "@/api/client";
-import type { CapperInstance, ResourceEvent } from "@/types/capper";
+import type { CapperInstance, ResourceEvent, RuntimeMode } from "@/types/capper";
 
 export function useInstances() {
   return useQuery({
@@ -173,6 +173,7 @@ export function useCreateInstance() {
       capInitContent?: string;
       volumes?: { name: string; mountPath: string }[];
       diskBytes?: number;
+      runtimeMode?: RuntimeMode | string;
     }) => apiFetch<CapperInstance>("/instances", { method: "POST", body: JSON.stringify(body) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
   });

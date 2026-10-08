@@ -28,3 +28,6 @@ screenshots
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright auth storage (session cookies)
+tests/e2e/.auth/

@@ -20,6 +20,7 @@ export interface LaunchWizardState {
   volumes: { name: string; mountPath: string }[];
   /** Root-disk size override in GiB ("" = use the capsule type's default). */
   diskGiB: string;
+  runtimeMode: string;
   capInitMode: "none" | "template" | "paste";
   capInitTemplate: string;
   capInitContent: string;
@@ -49,6 +50,7 @@ const initial = {
   volumeMount: "/mnt/data",
   volumes: [] as { name: string; mountPath: string }[],
   diskGiB: "",
+  runtimeMode: "auto",
   capInitMode: "none" as const,
   capInitTemplate: "",
   capInitContent: "",

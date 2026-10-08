@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { useEffect, Suspense, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import {
@@ -340,6 +340,15 @@ function AwaitingApproval() {
 
 export function AppShell() {
   const { data: me, error: meError, isLoading: meLoading } = useCurrentUser();
+
+  // Cookie is HttpOnly; refresh CSRF from session JSON after reloads / SSO.
+  useEffect(() => {
+    apiFetch<{ authenticated?: boolean; csrfToken?: string }>("/auth/session")
+      .then((data) => {
+        if (data?.csrfToken) setCsrfToken(data.csrfToken);
+      })
+      .catch(() => {});
+  }, []);
 
   // No session → show the public login screen (Google + username/password).
   const unauthorized = meError instanceof ApiError && meError.status === 401;

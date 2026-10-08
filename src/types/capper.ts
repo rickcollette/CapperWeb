@@ -12,6 +12,15 @@ export type InstanceState =
   | "starting"
   | "unknown";
 
+export type RuntimeMode =
+  | "auto"
+  | "bwrap"
+  | "chroot"
+  | "crun"
+  | "runc"
+  | "lxc"
+  | "qemu";
+
 export interface ResourceLimits {
   memoryBytes?: number;
   cpuTimeSecs?: number;
@@ -28,7 +37,7 @@ export interface CapperInstance {
   imageDigest: string;
   status: InstanceState;
   pid: number;
-  runtimeMode?: string;
+  runtimeMode?: RuntimeMode | string;
   instanceType?: string;
   capsuleType?: string;
   hostname?: string;

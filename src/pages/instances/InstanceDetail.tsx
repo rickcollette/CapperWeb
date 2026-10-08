@@ -18,6 +18,7 @@ import { DeletionProgressModal } from "@/components/DeletionProgressModal";
 import { useDeletionFlow } from "@/hooks/useDeletionFlow";
 import { InstanceTerminal } from "@/components/terminal/InstanceTerminal";
 import { InstanceEditForm } from "@/components/InstanceEditForm";
+import { runtimeModeLabel } from "@/lib/runtimes";
 
 const tabs = ["Overview", "Events", "Logs", "Metrics", "Networking", "Storage", "CapInit", "Security", "Console", "JSON"] as const;
 
@@ -152,7 +153,7 @@ export function InstanceDetail() {
             <div><span className="text-muted">Capsule type</span><div>{inst.capsuleType ?? "default"}</div></div>
             <div><span className="text-muted">Network IP</span><div>{inst.networkIp ?? "none"}</div></div>
             <div><span className="text-muted">Started</span><div>{inst.startedAt ?? "—"}</div></div>
-            <div><span className="text-muted">Runtime</span><div>{inst.runtimeMode ?? "—"}</div></div>
+            <div><span className="text-muted">Runtime</span><div className="font-mono text-sm">{runtimeModeLabel(inst.runtimeMode)}</div></div>
           </Card>
 
           <Card>
@@ -255,7 +256,7 @@ export function InstanceDetail() {
           <div><span className="text-muted">Key pair</span><div>{inst.keyName ?? "—"}</div></div>
           <div><span className="text-muted">Termination protection</span><div>{inst.terminationProtection ? "enabled" : "disabled"}</div></div>
           <div><span className="text-muted">Shutdown behavior</span><div>{inst.shutdownBehavior ?? "—"}</div></div>
-          <div><span className="text-muted">Runtime mode</span><div>{inst.runtimeMode ?? "auto"}</div></div>
+          <div><span className="text-muted">Runtime mode</span><div className="font-mono text-sm">{runtimeModeLabel(inst.runtimeMode)}</div></div>
           <div><span className="text-muted">Image digest</span><div className="font-mono text-xs">{inst.imageDigest}</div></div>
           <div><span className="text-muted">Security groups</span><div className="font-mono text-xs">{(inst.securityGroupIds ?? []).join(", ") || "—"}</div></div>
         </Card>
@@ -298,7 +299,19 @@ export function InstanceDetail() {
       )}
 
       {tab === "Console" && caps?.canConnect && inst.status === "running" && (
-        <InstanceTerminal instanceId={id} />
+        <div className="space-y-2">
+          {inst.runtimeMode === "qemu" && (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+              QEMU console attaches to the guest serial port, not an interactive shell attach.
+            </p>
+          )}
+          {inst.runtimeMode === "lxc" && (
+            <p className="rounded-lg border border-border/60 bg-slate-800/40 px-3 py-2 text-xs text-muted">
+              LXC console uses lxc-attach into the running container.
+            </p>
+          )}
+          <InstanceTerminal instanceId={id} runtimeMode={inst.runtimeMode} />
+        </div>
       )}
 
       {tab === "JSON" && (

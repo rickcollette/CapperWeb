@@ -8,6 +8,7 @@ import { DeletionProgressModal } from "@/components/DeletionProgressModal";
 import { useDeletionFlow } from "@/hooks/useDeletionFlow";
 import { formatBytes, formatUptime, imageDisplayName } from "@/lib/utils";
 import type { CapperInstance } from "@/types/capper";
+import { runtimeModeLabel } from "@/lib/runtimes";
 
 export function InstanceList() {
   const { data, isLoading, error, refetch } = useInstances();
@@ -138,6 +139,7 @@ export function InstanceList() {
                 <th className="p-3">State</th>
                 <th className="p-3">Image</th>
                 <th className="p-3">Type</th>
+                <th className="p-3">Runtime</th>
                 <th className="p-3">Network</th>
                 <th className="p-3">Memory</th>
                 <th className="p-3">Uptime</th>
@@ -236,6 +238,7 @@ function InstanceRow({
       <td className="p-3"><StatusBadge status={inst.status} /></td>
       <td className="p-3 font-mono text-xs">{imageDisplayName(inst.image)}</td>
       <td className="p-3">{inst.capsuleType ?? "—"}</td>
+      <td className="p-3 font-mono text-xs">{runtimeModeLabel(inst.runtimeMode)}</td>
       <td className="p-3">{inst.networkIp ?? "none"}</td>
       <td className="p-3">{inst.resources?.memoryBytes ? formatBytes(inst.resources.memoryBytes) : "—"}</td>
       <td className="p-3">{formatUptime(inst.startedAt)}</td>

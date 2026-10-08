@@ -10,6 +10,7 @@ import { Button, Card, PageHeader } from "@/components/common/ui";
 import { useLaunchWizard, WIZARD_STEPS } from "@/stores/launchWizard";
 import { formatBytes, imageDisplayName } from "@/lib/utils";
 import { features } from "@/lib/features";
+import { RUNTIME_MODES, isHeavyRuntime, runtimeModeDescription } from "@/lib/runtimes";
 
 export function CreateInstance() {
   const navigate = useNavigate();
@@ -74,6 +75,7 @@ export function CreateInstance() {
         env: Object.keys(wizard.env).length ? wizard.env : undefined,
         volumes: wizard.volumes.length ? wizard.volumes : undefined,
         diskBytes: wizard.diskGiB ? Math.round(Number(wizard.diskGiB) * 1024 ** 3) : undefined,
+        runtimeMode: wizard.runtimeMode && wizard.runtimeMode !== "auto" ? wizard.runtimeMode : undefined,
         capInitTemplate: wizard.capInitMode === "template" ? wizard.capInitTemplate : undefined,
         capInitContent: wizard.capInitMode === "paste" ? wizard.capInitContent : undefined,
       },
@@ -342,6 +344,26 @@ export function CreateInstance() {
 
         {wizard.step === 7 && (
           <div className="space-y-4">
+            <label className="block space-y-1 text-sm">
+              <span className="text-muted">Runtime mode</span>
+              <select
+                value={wizard.runtimeMode}
+                onChange={(e) => wizard.update({ runtimeMode: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              >
+                {RUNTIME_MODES.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-muted">{runtimeModeDescription(wizard.runtimeMode)}</p>
+              {isHeavyRuntime(wizard.runtimeMode) && (
+                <p className="text-xs text-amber-400/90">
+                  {wizard.runtimeMode === "qemu"
+                    ? "QEMU converts the capsule rootfs to a qcow2 VM disk. Console attaches to serial, not a guest shell. Host needs qemu-system, qemu-img, and virt-make-fs."
+                    : "LXC runs the capsule rootfs as a container. Host needs lxc-start / lxc-attach. Wider attack surface than bubblewrap."}
+                </p>
+              )}
+            </label>
             <div className="flex gap-2">
               {(["none", "template", "paste"] as const).map((m) => (
                 <button
@@ -390,6 +412,7 @@ export function CreateInstance() {
               <div><dt className="text-muted">Key pair</dt><dd>{wizard.keyName || "none"}</dd></div>
               <div><dt className="text-muted">Root disk</dt><dd>{wizard.diskGiB ? `${wizard.diskGiB} GiB` : "type default"}</dd></div>
               <div><dt className="text-muted">Volumes</dt><dd>{wizard.volumes.length || "none"}</dd></div>
+              <div><dt className="text-muted">Runtime</dt><dd>{wizard.runtimeMode || "auto"}</dd></div>
               <div><dt className="text-muted">CapInit</dt><dd>{wizard.capInitMode}</dd></div>
             </dl>
             <label className="flex items-center gap-2 text-sm">

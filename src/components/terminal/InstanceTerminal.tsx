@@ -3,7 +3,7 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 
-export function InstanceTerminal({ instanceId }: { instanceId: string }) {
+export function InstanceTerminal({ instanceId, runtimeMode }: { instanceId: string; runtimeMode?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -52,7 +52,9 @@ export function InstanceTerminal({ instanceId }: { instanceId: string }) {
 
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-[#0a0c10] p-2">
-      <p className="mb-2 text-xs text-muted">Ctrl+R reconnect · select text to copy</p>
+      <p className="mb-2 text-xs text-muted">
+        Ctrl+R reconnect · select text to copy{runtimeMode === "qemu" ? " · serial console" : runtimeMode === "lxc" ? " · lxc-attach" : ""}
+      </p>
       <div ref={ref} className="h-[420px] w-full" />
     </div>
   );

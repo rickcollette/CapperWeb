@@ -2,7 +2,7 @@
 
 Capper WebUI is designed as a real control plane, not just a pretty wrapper around CLI commands. The frontend feels like a lightweight private AWS console for capsules: instances, images, networks, storage, IAM, marketplace, factory sync, and capinit/metadata.
 
-Capper already provides the right backend concepts: a `Controller` exposing image and instance managers with IAM authorization, a daemon control plane, runtime support for bwrap/chroot/crun/runc, S3-compatible object storage, buckets, objects, volumes, networks, DNS, and IAM primitives. The UI sits on top of those instead of duplicating logic in the browser.
+Capper already provides the right backend concepts: a `Controller` exposing image and instance managers with IAM authorization, a daemon control plane, runtime support for bwrap/chroot/crun/runc/lxc/qemu, S3-compatible object storage, buckets, objects, volumes, networks, DNS, and IAM primitives. The UI sits on top of those instead of duplicating logic in the browser.
 
 ## Recommended Stack
 
@@ -232,7 +232,7 @@ Alerts
 - metadata service unreachable
 ```
 
-Since Capper already tracks runtime launches, process IDs, logs, resource limits, and restart behavior, the dashboard should surface those directly. Runtime support includes bwrap, chroot, crun, and runc modes, with resource limits applied from capsule manifests. 
+Since Capper already tracks runtime launches, process IDs, logs, resource limits, and restart behavior, the dashboard should surface those directly. Runtime support includes auto, bwrap, chroot, crun, runc, lxc, and qemu modes (per-instance `runtimeMode`), with resource limits applied from capsule manifests. LXC/QEMU require host packages; `auto` never selects them. 
 
 # Instances UI
 
@@ -245,6 +245,7 @@ Name
 Instance ID
 Image
 State
+Runtime
 Capsule Type
 CPU
 Memory
@@ -434,9 +435,12 @@ Create new volume
 Mount object bucket
 ```
 
-## Step 5: CapInit
+## Step 5: CapInit + Runtime
 
-This is where your “cloud-init style” system belongs.
+This is where your “cloud-init style” system belongs. The Advanced step also
+exposes **Runtime mode** (`runtimeMode`): `auto`, `bwrap`, `chroot`, `crun`,
+`runc`, `lxc`, or `qemu`. Prefer process isolation unless the operator host has
+LXC/QEMU packages installed; `auto` never picks LXC or QEMU.
 
 Options:
 
@@ -476,6 +480,7 @@ Show final generated launch plan:
 ```txt
 Image
 Digest
+Runtime mode
 Capsule type
 Network
 Volumes
@@ -1303,7 +1308,7 @@ export interface CapperInstance {
   imageDigest: string;
   state: InstanceState;
   pid?: number;
-  runtimeMode: "auto" | "bwrap" | "chroot" | "crun" | "runc";
+  runtimeMode: "auto" | "bwrap" | "chroot" | "crun" | "runc" | "lxc" | "qemu";
   capsuleType: string;
   hostname?: string;
   network?: {

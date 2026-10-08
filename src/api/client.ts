@@ -2,15 +2,14 @@ import type { ApiEnvelope } from "@/types/capper";
 
 const API_BASE = import.meta.env.VITE_CAPPER_API_URL ?? "/api/v1";
 
-let csrfToken: string | null = null;
+const CSRF_STORAGE_KEY = "capper_csrf_token";
+
+let csrfToken: string | null = sessionStorage.getItem(CSRF_STORAGE_KEY);
 
 export function setCsrfToken(token: string | null) {
   csrfToken = token;
-}
-
-function readCookie(name: string): string | null {
-  const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
-  return m ? decodeURIComponent(m[1]) : null;
+  if (token) sessionStorage.setItem(CSRF_STORAGE_KEY, token);
+  else sessionStorage.removeItem(CSRF_STORAGE_KEY);
 }
 
 export type ApiErrorKind =
@@ -83,9 +82,8 @@ function buildHeaders(options: RequestInit): HeadersInit {
     ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
     ...(options.headers as Record<string, string> ?? {}),
   };
-  // CSRF token: prefer the in-memory value (set at login), else read the
-  // capper_csrf cookie so it survives reloads and the Google redirect.
-  const csrf = csrfToken ?? readCookie("capper_csrf");
+  // CSRF token from login/session JSON (cookie is HttpOnly; not readable by JS).
+  const csrf = csrfToken ?? sessionStorage.getItem(CSRF_STORAGE_KEY);
   if (csrf) {
     headers["X-CSRF-Token"] = csrf;
   }
