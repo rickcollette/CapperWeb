@@ -31,3 +31,4 @@ screenshots
 
 # Playwright auth storage (session cookies)
 tests/e2e/.auth/
+tests/e2e/.auth/
